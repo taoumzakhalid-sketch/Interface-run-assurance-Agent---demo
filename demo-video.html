@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interface Run Assurance — Product Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════════
+   DESIGN TOKENS
+════════════════════════════════════════════════ */
+:root{
+  --bg:       #05050E;
+  --bg2:      #09091A;
+  --bg3:      #0E0E24;
+  --surface:  rgba(255,255,255,0.035);
+  --surface2: rgba(255,255,255,0.065);
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.12);
+  --gold:     #C9A84C;
+  --gold-l:   #E8C76A;
+  --gold-d:   #A8863A;
+  --gold-dim: rgba(201,168,76,0.12);
+  --gold-glow:rgba(201,168,76,0.25);
+  --gold-grad:linear-gradient(135deg,#C9A84C 0%,#E8C76A 50%,#B8933C 100%);
+  --text:     #EEF2F7;
+  --text-s:   #94A3B8;
+  --text-m:   #64748B;
+  --text-d:   #3E4C5E;
+  --ok:       #22C55E;
+  --ok-d:     rgba(34,197,94,0.12);
+  --ok-b:     rgba(34,197,94,0.25);
+  --err:      #EF4444;
+  --err-d:    rgba(239,68,68,0.12);
+  --err-b:    rgba(239,68,68,0.28);
+  --warn:     #F59E0B;
+  --warn-d:   rgba(245,158,11,0.12);
+  --warn-b:   rgba(245,158,11,0.28);
+  --info:     #3B82F6;
+  --info-d:   rgba(59,130,246,0.12);
+  --info-b:   rgba(59,130,246,0.28);
+  --purple:   #8B5CF6;
+  --purp-d:   rgba(139,92,246,0.12);
+  --purp-b:   rgba(139,92,246,0.28);
+  --f:        'Inter',system-ui,sans-serif;
+  --mono:     'JetBrains Mono',monospace;
+  --r:        10px;
+  --r-s:      6px;
+  --r-l:      14px;
+}
+
+/* ════════════════════════════════════════════════
+   RESET & BASE
+════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:var(--f);}
+body{display:flex;align-items:center;justify-content:center;}
+
+/* ════════════════════════════════════════════════
+   VIDEO SHELL  — maintains 16:9 in any viewport
+════════════════════════════════════════════════ */
+#shell{
+  position:relative;
+  width:min(100vw,177.78vh);
+  aspect-ratio:16/9;
+  overflow:hidden;
+  background:var(--bg);
+}
+
+/* ════════════════════════════════════════════════
+   SCENES
+════════════════════════════════════════════════ */
+.scene{
+  position:absolute;inset:0;
+  opacity:0;pointer-events:none;
+  transition:opacity .65s ease;
+  padding:3% 4% 3.5% 4%;
+  display:flex;flex-direction:column;
+}
+.scene.active{opacity:1;pointer-events:all;}
+
+/* ════════════════════════════════════════════════
+   PROGRESS BAR
+════════════════════════════════════════════════ */
+#prog{position:absolute;top:0;left:0;right:0;height:3px;z-index:200;background:rgba(255,255,255,0.05);}
+#prog-fill{height:100%;width:0%;background:var(--gold-grad);box-shadow:0 0 10px var(--gold-glow);}
+/* Scene markers on progress bar */
+.prog-mark{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.15);}
+
+/* ════════════════════════════════════════════════
+   SCENE INDICATOR (top-right)
+════════════════════════════════════════════════ */
+#scene-ind{
+  position:absolute;top:14px;right:18px;z-index:200;
+  display:flex;align-items:center;gap:7px;
+}
+.sdot{
+  width:7px;height:7px;border-radius:50%;cursor:pointer;
+  background:rgba(255,255,255,0.12);transition:all .3s;
+}
+.sdot.done{background:rgba(201,168,76,0.35);}
+.sdot.cur{background:var(--gold);box-shadow:0 0 7px var(--gold-glow);transform:scale(1.25);}
+
+/* ════════════════════════════════════════════════
+   SCENE CAPTION (bottom)
+════════════════════════════════════════════════ */
+#scene-cap{
+  position:absolute;bottom:46px;left:50%;transform:translateX(-50%);
+  z-index:200;font-size:10px;font-weight:600;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--text-m);
+  opacity:0;transition:opacity .4s;pointer-events:none;
+}
+#scene-cap.vis{opacity:1;}
+
+/* ════════════════════════════════════════════════
+   PLAYBACK CONTROLS
+════════════════════════════════════════════════ */
+#ctrls{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:200;
+  display:flex;align-items:center;gap:14px;
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(14px);
+  padding:7px 18px;border-radius:28px;border:1px solid var(--border);
+  opacity:0;transition:opacity .3s;
+}
+#shell:hover #ctrls{opacity:1;}
+#btn-pp{
+  width:30px;height:30px;border-radius:50%;border:1px solid var(--gold);
+  background:var(--gold-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+}
+#btn-pp:hover{background:rgba(201,168,76,0.3);}
+#btn-pp svg{width:11px;height:11px;fill:var(--gold);}
+#timecode{font-size:10.5px;font-family:var(--mono);color:var(--text-s);}
+#scene-name-ctrl{font-size:10px;color:var(--text-m);letter-spacing:.06em;}
+
+/* ════════════════════════════════════════════════
+   GLOBAL BACKGROUND LAYERS
+════════════════════════════════════════════════ */
+#canvas-bg{position:absolute;inset:0;z-index:0;opacity:.55;}
+.bg-grid{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(201,168,76,0.025) 1px,transparent 1px);
+  background-size:56px 56px;
+}
+.bg-vignette{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 40%,rgba(0,0,0,.6) 100%);
+}
+
+/* ════════════════════════════════════════════════
+   TYPOGRAPHY
+════════════════════════════════════════════════ */
+.scene-label{font-size:9.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text-m);margin-bottom:3px;}
+.scene-headline{font-size:clamp(17px,2.3vw,34px);font-weight:700;color:var(--text);line-height:1.1;}
+.scene-sub{font-size:clamp(10px,1.05vw,15px);color:var(--text-s);}
+.f-mono{font-family:var(--mono);}
+.c-gold{color:var(--gold);}
+.c-ok{color:var(--ok);}
+.c-err{color:var(--err);}
+.c-warn{color:var(--warn);}
+.c-info{color:var(--info);}
+.c-muted{color:var(--text-m);}
+
+/* ════════════════════════════════════════════════
+   TAG PILL
+════════════════════════════════════════════════ */
+.tag{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  padding:4px 11px;border-radius:3px;
+  border:1px solid rgba(201,168,76,0.28);
+  color:var(--gold);background:var(--gold-dim);
+}
+.tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gold);animation:blink-dot 2s infinite;}
+.tag-info{border-color:var(--info-b);color:var(--info);background:var(--info-d);}
+.tag-info::before{background:var(--info);animation:none;}
+.tag-ok{border-color:var(--ok-b);color:var(--ok);background:var(--ok-d);}
+.tag-ok::before{background:var(--ok);animation:none;}
+
+/* ════════════════════════════════════════════════
+   BADGES
+════════════════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:600;padding:2.5px 7px;border-radius:3px;letter-spacing:.04em;white-space:nowrap;}
+.b-ok  {background:var(--ok-d);color:var(--ok);border:1px solid var(--ok-b);}
+.b-err {background:var(--err-d);color:var(--err);border:1px solid var(--err-b);}
+.b-warn{background:var(--warn-d);color:var(--warn);border:1px solid var(--warn-b);}
+.b-info{background:var(--info-d);color:var(--info);border:1px solid var(--info-b);}
+.b-gold{background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,168,76,0.28);}
+.b-purp{background:var(--purp-d);color:#C084FC;border:1px solid var(--purp-b);}
+.b-p1  {background:rgba(239,68,68,.18);color:#FF7B7B;border:1px solid rgba(239,68,68,.4);font-size:10px;font-weight:700;}
+.b-p2  {background:rgba(245,158,11,.15);color:var(--warn);border:1px solid rgba(245,158,11,.35);font-size:10px;font-weight:700;}
+.dot-s{width:5px;height:5px;border-radius:50%;display:inline-block;}
+.ds-ok  {background:var(--ok);}
+.ds-err {background:var(--err);animation:blink-dot 1s infinite;}
+.ds-warn{background:var(--warn);}
+.ds-info{background:var(--info);}
+
+/* ════════════════════════════════════════════════
+   GLASS CARD
+════════════════════════════════════════════════ */
+.glass{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);backdrop-filter:blur(16px);}
+.glass-gold{background:var(--gold-dim);border:1px solid rgba(201,168,76,0.22);border-radius:var(--r);}
+.glass-ok  {background:var(--ok-d);border:1px solid var(--ok-b);border-radius:var(--r);}
+.glass-err {background:var(--err-d);border:1px solid var(--err-b);border-radius:var(--r);}
+
+/* ════════════════════════════════════════════════
+   APP WINDOW (mock browser/app chrome)
+════════════════════════════════════════════════ */
+.app{border-radius:var(--r);overflow:hidden;border:1px solid var(--border2);background:var(--bg2);display:flex;flex-direction:column;}
+.app-bar{
+  display:flex;align-items:center;gap:7px;padding:7px 11px;
+  background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.app-dots{display:flex;gap:5px;}
+.app-dots span{width:9px;height:9px;border-radius:50%;}
+.app-dots .rd{background:#FF5F57;}
+.app-dots .yw{background:#FEBC2E;}
+.app-dots .gn{background:#28C840;}
+.app-lbl{font-size:10px;font-weight:500;color:var(--text-s);letter-spacing:.04em;flex:1;}
+.app-body{flex:1;overflow:hidden;padding:9px 11px;display:flex;flex-direction:column;gap:6px;}
+
+/* ════════════════════════════════════════════════
+   DATA TABLE
+════════════════════════════════════════════════ */
+.tbl{width:100%;border-collapse:collapse;font-size:10.5px;}
+.tbl th{text-align:left;padding:4px 8px;color:var(--text-m);font-weight:500;font-size:9px;letter-spacing:.09em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.tbl td{padding:5px 8px;color:var(--text-s);border-bottom:1px solid rgba(255,255,255,0.033);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr.hl-ok  td{background:rgba(34,197,94,0.04);}
+.tbl tr.hl-err td{background:rgba(239,68,68,0.05);}
+.tbl tr.hl-warn td{background:rgba(245,158,11,0.04);}
+
+/* ════════════════════════════════════════════════
+   TIMELINE
+════════════════════════════════════════════════ */
+.tl{display:flex;flex-direction:column;}
+.tl-item{display:flex;gap:10px;padding:7px 0;position:relative;}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:12px;top:30px;bottom:-7px;width:1px;background:rgba(255,255,255,0.08);}
+.tl-ico{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:2px solid transparent;margin-top:1px;}
+.ti-ok  {background:var(--ok-d);border-color:var(--ok-b);color:var(--ok);}
+.ti-err {background:var(--err-d);border-color:var(--err-b);color:var(--err);}
+.ti-warn{background:var(--warn-d);border-color:var(--warn-b);color:var(--warn);}
+.ti-idle{background:var(--surface);border-color:var(--border2);color:var(--text-m);}
+.tl-body{flex:1;}
+.tl-ttl{font-size:11.5px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.tl-meta{font-size:9.5px;color:var(--text-m);font-family:var(--mono);}
+
+/* ════════════════════════════════════════════════
+   FORM FIELD
+════════════════════════════════════════════════ */
+.field{display:flex;flex-direction:column;gap:3px;}
+.f-lbl{font-size:9px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--text-m);}
+.f-val{font-size:11px;color:var(--text);padding:5px 9px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-s);font-family:var(--mono);}
+
+/* ════════════════════════════════════════════════
+   KPI CARD
+════════════════════════════════════════════════ */
+.kpi{padding:12px 14px;border-radius:var(--r);background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:3px;}
+.kpi-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-m);}
+.kpi-val{font-size:clamp(20px,2.6vw,36px);font-weight:800;color:var(--text);line-height:1;}
+.kpi-sub{font-size:9.5px;font-weight:500;}
+.kpi-up{color:var(--ok);}
+.kpi-down{color:var(--err);}
+.kpi-warn{color:var(--warn);}
+.kpi-gold{border-color:rgba(201,168,76,0.2);background:var(--gold-dim);}
+
+/* ════════════════════════════════════════════════
+   AI BUTTON
+════════════════════════════════════════════════ */
+.ai-btn{
+  display:inline-flex;align-items:center;gap:9px;cursor:pointer;
+  background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.08));
+  border:1px solid var(--gold);border-radius:8px;
+  padding:9px 20px;font-size:12.5px;font-weight:600;color:var(--gold);
+  box-shadow:0 0 24px rgba(201,168,76,.18);
+  transition:all .3s;
+}
+.ai-btn:hover{background:rgba(201,168,76,.25);box-shadow:0 0 40px rgba(201,168,76,.35);}
+.ai-btn-pulse{animation:ai-pulse 2.8s ease-in-out infinite;}
+
+/* ════════════════════════════════════════════════
+   ANIM CLASSES  (triggered by JS adding .in)
+════════════════════════════════════════════════ */
+.ae   {opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease;}
+.ae-l {opacity:0;transform:translateX(-22px);transition:opacity .6s ease,transform .6s ease;}
+.ae-r {opacity:0;transform:translateX(22px);transition:opacity .6s ease,transform .6s ease;}
+.ae-s {opacity:0;transform:scale(.93);transition:opacity .5s ease,transform .5s ease;}
+.ae-f {opacity:0;transition:opacity .6s ease;}
+.ae.in,.ae-l.in,.ae-r.in,.ae-s.in,.ae-f.in{opacity:1;transform:none;}
+
+/* ════════════════════════════════════════════════
+   SCENE TRANSITION FLASH
+════════════════════════════════════════════════ */
+#flash{position:absolute;inset:0;z-index:190;background:#000;opacity:0;pointer-events:none;transition:opacity .15s ease;}
+
+/* ════════════════════════════════════════════════
+   KEYFRAMES
+════════════════════════════════════════════════ */
+@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink    {0%,100%{opacity:1}50%{opacity:0 }}
+@keyframes ai-pulse {0%,100%{box-shadow:0 0 24px rgba(201,168,76,.18)}50%{box-shadow:0 0 50px rgba(201,168,76,.5),0 0 80px rgba(201,168,76,.12)}}
+@keyframes status-flash{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin     {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes pkt-fall {0%{top:-6px;opacity:0}8%{opacity:1}92%{opacity:1}100%{top:100%;opacity:0}}
+@keyframes row-fade-in{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes orbit-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes counter-up{from{transform:translateY(60%);opacity:0}to{transform:none;opacity:1}}
+@keyframes sla-arc-in{from{stroke-dashoffset:264}to{stroke-dashoffset:0}}
+@keyframes breach-in{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes slide-up-in{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}
+@keyframes chart-draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+@keyframes bar-grow{from{width:0}to{width:var(--w)}}
+@keyframes float-particle{
+  0%  {transform:translate(0,0);opacity:.6}
+  33% {transform:translate(var(--dx1),var(--dy1));opacity:.4}
+  66% {transform:translate(var(--dx2),var(--dy2));opacity:.6}
+  100%{transform:translate(0,0);opacity:.6}
+}
+
+/* ════════════════════════════════════════════════
+   SCENE 1 — CONTEXT & PROMISE
+════════════════════════════════════════════════ */
+#s1{z-index:10;}
+.s1-orb1{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 55% 90% at 35% 50%,rgba(201,168,76,.055) 0%,transparent 65%);}
+.s1-orb2{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 40% 60% at 80% 30%,rgba(59,130,246,.04) 0%,transparent 60%);}
+#s1-left{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;gap:14px;
+  justify-content:center;height:100%;width:55%;padding-right:4%;
+}
+.s1-eyebrow{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px;}
+.s1-eyebrow::before{content:'';width:24px;height:1px;background:var(--gold);}
+.s1-hero{
+  font-size:clamp(30px,5vw,70px);font-weight:900;line-height:1.02;letter-spacing:-.025em;
+  background:linear-gradient(135deg,#FFF 25%,var(--gold-l) 65%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.s1-tagline{font-size:clamp(12px,1.35vw,19px);font-weight:400;color:var(--text-s);line-height:1.55;max-width:480px;}
+.s1-stmts{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+.s1-stmt{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 16px;border-radius:8px;
+  background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);
+  border-left:2.5px solid var(--gold);
+  font-size:clamp(11px,1.25vw,16px);font-weight:500;color:var(--text);
+}
+.s1-stmt-ico{font-size:15px;flex-shrink:0;}
+#s1-right{
+  position:absolute;right:4%;top:50%;transform:translateY(-50%);
+  width:33%;z-index:2;display:flex;flex-direction:column;gap:8px;
+}
+.s1-flow-card{
+  padding:12px 14px;border-radius:8px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.s1-fc-label{font-size:9.5px;color:var(--text-m);letter-spacing:.05em;}
+.s1-fc-value{font-size:18px;font-weight:700;color:var(--text);font-family:var(--mono);}
+
+/* ════════════════════════════════════════════════
+   SCENE 2 — TRANSACTION MONITORING
+════════════════════════════════════════════════ */
+.s2-grid{flex:1;display:grid;grid-template-columns:1fr 68px 1fr;gap:10px;min-height:0;}
+.s2-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-shrink:0;}
+/* Flow column */
+.flow-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.flow-pill{padding:5px 8px;border-radius:5px;font-size:9px;font-weight:600;letter-spacing:.08em;text-align:center;background:var(--purp-d);border:1px solid var(--purp-b);color:#C084FC;}
+.flow-pipe{position:relative;width:2px;flex:1;background:rgba(255,255,255,0.07);border-radius:2px;overflow:visible;max-height:180px;}
+.pkt{position:absolute;width:8px;height:8px;border-radius:50%;left:50%;transform:translateX(-50%);animation:pkt-fall linear infinite;}
+.pkt-ok{background:var(--ok);box-shadow:0 0 6px var(--ok);animation-duration:1.8s;}
+.pkt-ok.d1{animation-delay:0s;}
+.pkt-ok.d2{animation-delay:.6s;}
+.pkt-ok.d3{animation-delay:1.2s;}
+.ack-pipe{transform:scaleY(-1);}
+.s2-footer{
+  margin-top:10px;flex-shrink:0;padding:9px 14px;border-radius:7px;
+  background:var(--gold-dim);border:1px solid rgba(201,168,76,.2);
+  display:flex;align-items:center;gap:10px;
+  font-size:11.5px;color:var(--gold);font-weight:500;
+}
+
+/* ════════════════════════════════════════════════
+   SCENE 3 — ISSUE DETECTION
+════════════════════════════════════════════════ */
+.s3-grid{flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:14px;min-height:0;}
+.sla-box{
+  padding:14px;border-radius:var(--r);
+  background:var(--err-d);border:1px solid var(--err-b);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.sla-ring{position:relative;width:96px;height:96px;}
+.sla-ring svg{position:absolute;inset:0;transform:rotate(-90deg);}
+.sla-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.sla-val{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--err);}
+.sla-limit{font-size:8.5px;color:var(--text-m);}
+.sla-breach{
+  padding:4px 12px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:.08em;
+  background:var(--err-d);border:1px solid var(--err-b);color:var(--err);
+  animation:status-flash 1.4s infinite;
+}
+.rca-card{padding:10px 12px;border-radius:8px;background:var(--err-d);border:1px solid var(--err-b);}
+.rca-hdr{font-size:10px;font-weight:700;color:var(--err);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
+.rca-row{font-size:10px;font-family:var(--mono);color:var(--text-s);margin:2px 0;}
+.rca-row span{color:var(--err);}
+
+/* ════════════════════════════════════════════════
+   SCENE 4 — REMEDIATION
+════════════════════════════════════════════════ */
+.s4-grid{flex:1;display:grid;grid-template-columns:.8fr 1.2fr;gap:14px;min-height:0;}
+.status-pane{
+  padding:13px;border-radius:var(--r);
+  background:var(--surface);border:1px solid var(--border2);
+  display:flex;flex-direction:column;gap:7px;
+}
+.status-big{
+  font-size:clamp(18px,2.4vw,30px);font-weight:900;text-align:center;
+  padding:12px;border-radius:8px;transition:all .7s ease;letter-spacing:.04em;
+}
+.sb-err {background:var(--err-d);color:var(--err);border:1px solid var(--err-b);}
+.sb-proc{background:var(--info-d);color:var(--info);border:1px solid var(--info-b);}
+.sb-ok  {background:var(--ok-d);color:var(--ok);border:1px solid var(--ok-b);}
+.s4-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:5px;background:rgba(255,255,255,0.02);}
+.s4-rlbl{font-size:10.5px;color:var(--text-s);}
+/* Log terminal */
+.log-term{
+  flex:1;border-radius:var(--r);overflow:hidden;
+  background:#030309;border:1px solid rgba(255,255,255,0.07);
+  display:flex;flex-direction:column;min-height:0;
+}
+.log-topbar{
+  padding:6px 12px;background:rgba(255,255,255,0.03);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.log-led{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:blink-dot 1.5s infinite;}
+.log-ttl{font-size:9.5px;color:var(--text-m);font-family:var(--mono);letter-spacing:.04em;}
+.log-body{flex:1;padding:10px 12px;overflow:hidden;display:flex;flex-direction:column;gap:3px;}
+.log-ln{display:flex;gap:8px;font-size:10px;font-family:var(--mono);line-height:1.45;opacity:0;}
+.log-ln.vis{opacity:1;}
+.lt{color:var(--text-m);flex-shrink:0;}
+.lv-info{color:#93C5FD;}
+.lv-ok  {color:var(--ok);}
+.lv-warn{color:var(--warn);}
+.lv-err {color:var(--err);}
+.lv-sys {color:#C084FC;}
+
+/* ════════════════════════════════════════════════
+   SCENE 5 — ITSM TICKET
+════════════════════════════════════════════════ */
+.s5-grid{flex:1;display:grid;grid-template-columns:1.05fr .95fr;gap:14px;min-height:0;}
+.ticket{
+  border-radius:var(--r);overflow:hidden;
+  background:var(--bg2);border:1px solid rgba(107,47,160,.35);
+  display:flex;flex-direction:column;
+}
+.ticket-hdr{
+  padding:9px 13px;background:rgba(107,47,160,.12);
+  border-bottom:1px solid rgba(107,47,160,.2);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.ticket-num{font-size:11px;font-weight:700;color:#C084FC;font-family:var(--mono);}
+.ticket-src{font-size:8.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--text-m);}
+.ticket-body{flex:1;overflow:hidden;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.t-title{
+  font-size:12.5px;font-weight:600;color:var(--text);
+  padding:7px 10px;border-radius:5px;
+  background:var(--surface);border:1px solid var(--border);
+  margin-bottom:2px;
+}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.attach-list{display:flex;flex-direction:column;gap:4px;}
+.attach-lbl{font-size:9px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--text-m);margin-bottom:3px;}
+.attach-row{
+  display:flex;align-items:center;gap:8px;padding:5px 8px;
+  border-radius:5px;background:var(--surface);border:1px solid var(--border);
+  font-size:10px;color:var(--text-s);font-family:var(--mono);
+}
+.attach-ico{
+  width:20px;height:20px;border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;
+}
+.s5-side{display:flex;flex-direction:column;gap:9px;}
+
+/* ════════════════════════════════════════════════
+   SCENE 6 — DASHBOARD & AI
+════════════════════════════════════════════════ */
+.s6-grid{flex:1;display:grid;grid-template-columns:1.1fr .9fr;gap:12px;min-height:0;}
+.dash-left{display:flex;flex-direction:column;gap:9px;}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+/* Chart */
+.chart-wrap{
+  flex:1;border-radius:var(--r);overflow:hidden;
+  background:var(--surface);border:1px solid var(--border);
+  min-height:0;display:flex;flex-direction:column;
+}
+.chart-hdr{padding:7px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.chart-ttl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-s);}
+#tx-chart{width:100%;height:100%;flex:1;}
+/* Incidents panel */
+.inc-panel{
+  border-radius:var(--r);overflow:hidden;
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.panel-hdr{padding:7px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ph-ttl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-s);}
+.inc-row{display:flex;align-items:center;gap:8px;padding:5.5px 12px;border-bottom:1px solid rgba(255,255,255,0.033);font-size:10px;}
+.inc-row:last-child{border-bottom:none;}
+.inc-id{font-family:var(--mono);color:var(--text-m);width:72px;flex-shrink:0;font-size:9.5px;}
+.inc-ttl{flex:1;color:var(--text);}
+.inc-age{color:var(--text-m);flex-shrink:0;font-size:9.5px;font-family:var(--mono);}
+/* AI panel */
+.ai-panel{
+  display:flex;flex-direction:column;border-radius:var(--r);overflow:hidden;
+  background:rgba(201,168,76,.025);border:1px solid rgba(201,168,76,.18);
+}
+.ai-panel-hdr{
+  padding:9px 13px;border-bottom:1px solid rgba(201,168,76,.12);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.ai-avatar{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:var(--gold-grad);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:900;color:#000;
+}
+.ai-hdr-name{font-size:11.5px;font-weight:600;color:var(--gold);}
+.ai-hdr-status{font-size:9.5px;color:var(--ok);display:flex;align-items:center;gap:4px;}
+.ai-chat{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:7px;overflow:hidden;}
+.cm{padding:8px 11px;border-radius:8px;font-size:10.5px;line-height:1.55;max-width:92%;}
+.cm-user{
+  align-self:flex-end;
+  background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);
+  color:var(--text);border-radius:8px 2px 8px 8px;
+}
+.cm-ai{
+  align-self:flex-start;
+  background:var(--surface2);border:1px solid var(--border);
+  color:var(--text-s);border-radius:2px 8px 8px 8px;
+}
+.cm-ai .hi{color:var(--gold);font-weight:600;}
+.cm-ai .ok{color:var(--ok);}
+.cm-ai .er{color:var(--err);}
+.ai-footer{padding:9px 12px;border-top:1px solid rgba(201,168,76,.1);display:flex;justify-content:center;flex-shrink:0;}
+
+/* ════════════════════════════════════════════════
+   END FRAME
+════════════════════════════════════════════════ */
+#end{
+  position:absolute;inset:0;z-index:180;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(201,168,76,.07) 0%,transparent 70%),var(--bg);
+  opacity:0;transition:opacity 1.2s ease;pointer-events:none;
+}
+#end.show{opacity:1;pointer-events:all;}
+.end-logo{
+  font-size:clamp(24px,4.2vw,58px);font-weight:900;letter-spacing:-.025em;text-align:center;
+  background:linear-gradient(135deg,#fff 20%,var(--gold-l) 55%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.end-tagline{font-size:clamp(11px,1.3vw,18px);color:var(--text-s);margin-top:10px;text-align:center;}
+.end-divider{width:72px;height:2px;margin:22px auto;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.end-co{font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-m);}
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <!-- Global background layers -->
+  <canvas id="canvas-bg"></canvas>
+  <div class="bg-grid"></div>
+  <div class="bg-vignette"></div>
+
+  <!-- Progress -->
+  <div id="prog">
+    <div id="prog-fill"></div>
+    <div class="prog-mark" style="left:16.67%"></div>
+    <div class="prog-mark" style="left:33.33%"></div>
+    <div class="prog-mark" style="left:50%"></div>
+    <div class="prog-mark" style="left:66.67%"></div>
+    <div class="prog-mark" style="left:83.33%"></div>
+  </div>
+
+  <!-- Scene dots -->
+  <div id="scene-ind">
+    <div class="sdot" data-s="0"></div>
+    <div class="sdot" data-s="1"></div>
+    <div class="sdot" data-s="2"></div>
+    <div class="sdot" data-s="3"></div>
+    <div class="sdot" data-s="4"></div>
+    <div class="sdot" data-s="5"></div>
+  </div>
+
+  <!-- Scene caption -->
+  <div id="scene-cap"></div>
+
+  <!-- Flash overlay for transitions -->
+  <div id="flash"></div>
+
+  <!-- ══════════════════════════════════════════
+       SCENE 1 — CONTEXT & PROMISE  (0–15s)
+  ══════════════════════════════════════════ -->
+  <div class="scene" id="s1">
+    <div class="s1-orb1"></div>
+    <div class="s1-orb2"></div>
+
+    <!-- Left content -->
+    <div id="s1-left">
+      <div class="s1-eyebrow ae" id="e-s1-0">BearingPoint × LVMH Beauty</div>
+      <div class="s1-hero ae" id="e-s1-1">Interface<br>Run Assurance</div>
+      <div class="s1-tagline ae" id="e-s1-2">Enterprise AI for Integration Run Control</div>
+      <div class="s1-stmts">
+        <div class="s1-stmt ae-l" id="e-s1-3">
+          <span class="s1-stmt-ico">⟷</span>
+          Every Coupa ↔ ERP transaction monitored
+        </div>
+        <div class="s1-stmt ae-l" id="e-s1-4">
+          <span class="s1-stmt-ico c-gold">◈</span>
+          SLA &nbsp;·&nbsp; Root cause &nbsp;·&nbsp; Remediation
+        </div>
+      </div>
+    </div>
+
+    <!-- Right stat cards -->
+    <div id="s1-right">
+      <div class="s1-flow-card glass ae-r" id="e-s1-5">
+        <div><div class="s1-fc-label">Daily transactions</div><div class="s1-fc-value" id="s1-tx">0</div></div>
+        <div class="badge b-ok"><span class="dot-s ds-ok"></span>Live</div>
+      </div>
+      <div class="s1-flow-card glass ae-r" id="e-s1-6">
+        <div><div class="s1-fc-label">Integration flows</div><div class="s1-fc-value">14</div></div>
+        <div class="badge b-gold">Monitored</div>
+      </div>
+      <div class="s1-flow-card glass ae-r" id="e-s1-7">
+        <div><div class="s1-fc-label">SLA compliance</div><div class="s1-fc-value c-ok">99.2%</div></div>
+        <span style="font-size:20px;color:var(--ok)">↑</span>
+      </div>
+      <div class="s1-flow-card glass ae-r" id="e-s1-8">
+        <div><div class="s1-fc-label">Avg resolution</div><div class="s1-fc-value">2.3 <span style="font-size:12px;color:var(--text-s)">min</span></div></div>
+        <div class="badge b-gold">Auto</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCENE 2 — TRANSACTION MONITORING  (15–30s)
+  ══════════════════════════════════════════ -->
+  <div class="scene" id="s2">
+    <div class="s2-header">
+      <div>
+        <div class="scene-label">02 / 06</div>
+        <div class="scene-headline ae" id="e-s2-hd">Transaction Monitoring</div>
+      </div>
+      <div class="tag ae-r" id="e-s2-tag">End-to-end · Coupa integrations</div>
+    </div>
+
+    <div class="s2-grid">
+      <!-- Coupa -->
+      <div class="app ae-l" id="e-s2-coupa">
+        <div class="app-bar">
+          <div class="app-dots"><span class="rd"></span><span class="yw"></span><span class="gn"></span></div>
+          <div style="width:24px;height:24px;border-radius:5px;background:linear-gradient(135deg,#0070D2,#005AB3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0;">C</div>
+          <div class="app-lbl">Coupa — Invoices &amp; POs</div>
+          <div class="badge b-info" style="font-size:8.5px;">PROD</div>
+        </div>
+        <div class="app-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:10px;font-weight:600;color:var(--text)">OK2PAY Queue</span>
+            <span class="badge b-warn">3 pending</span>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Invoice #</th><th>Supplier</th><th>Amount (€)</th><th>Status</th><th>ACK</th></tr></thead>
+            <tbody>
+              <tr class="hl-ok ae" id="e-s2-r1"><td class="f-mono c-info" style="font-size:9.5px">INV-2024-08471</td><td>LVMH Parfums SA</td><td class="f-mono">142,350</td><td><span class="badge b-ok">OK2PAY</span></td><td><span class="badge b-ok">✓ ACK</span></td></tr>
+              <tr class="ae" id="e-s2-r2"><td class="f-mono c-info" style="font-size:9.5px">INV-2024-08469</td><td>Givaudan SA</td><td class="f-mono">89,200</td><td><span class="badge b-ok">OK2PAY</span></td><td><span class="badge b-ok">✓ ACK</span></td></tr>
+              <tr class="hl-warn ae" id="e-s2-r3"><td class="f-mono c-info" style="font-size:9.5px">INV-2024-08472</td><td>Firmenich Int.</td><td class="f-mono">56,800</td><td><span class="badge b-warn">IN TRANSIT</span></td><td><span class="badge b-warn">Pending</span></td></tr>
+              <tr class="ae" id="e-s2-r4"><td class="f-mono c-info" style="font-size:9.5px">SUP-MDT-0081</td><td>IFF Cosmetics</td><td class="f-mono">—</td><td><span class="badge b-info">MASTER</span></td><td><span class="badge b-ok">✓ Synced</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Middleware flow -->
+      <div class="flow-col ae-f" id="e-s2-mw">
+        <div class="flow-pill">MDLWR</div>
+        <div class="flow-pipe">
+          <div class="pkt pkt-ok d1" style="top:-6px"></div>
+          <div class="pkt pkt-ok d2" style="top:-6px"></div>
+          <div class="pkt pkt-ok d3" style="top:-6px"></div>
+        </div>
+        <div style="font-size:9px;color:var(--text-m);font-weight:600;letter-spacing:.07em;">→ ERP</div>
+        <div class="flow-pipe ack-pipe">
+          <div class="pkt pkt-ok d1" style="top:-6px"></div>
+          <div class="pkt pkt-ok d2" style="top:-6px"></div>
+        </div>
+        <div class="flow-pill">ACK</div>
+      </div>
+
+      <!-- SAP -->
+      <div class="app ae-r" id="e-s2-sap">
+        <div class="app-bar">
+          <div class="app-dots"><span class="rd"></span><span class="yw"></span><span class="gn"></span></div>
+          <div style="width:24px;height:24px;border-radius:5px;background:linear-gradient(135deg,#0066B3,#004F8B);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;">SAP</div>
+          <div class="app-lbl">SAP S/4HANA — Accounts Payable</div>
+          <div class="badge b-info" style="font-size:8.5px;color:#22D3EE;border-color:rgba(34,211,238,.25);background:rgba(34,211,238,.08);">PRD</div>
+        </div>
+        <div class="app-body">
+          <div style="font-size:9.5px;color:var(--text-m);font-family:var(--mono);margin-bottom:4px;">FB60 / MIRO — Invoice Posting Log</div>
+          <table class="tbl">
+            <thead><tr><th>FI Doc</th><th>Flow</th><th>Amount (€)</th><th>Time</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr class="hl-ok ae" id="e-s2-sr1"><td class="f-mono">5100084710</td><td>AP-INV</td><td class="f-mono">142,350</td><td class="f-mono" style="font-size:9px">08:42:17</td><td><span class="badge b-ok">Posted</span></td></tr>
+              <tr class="ae" id="e-s2-sr2"><td class="f-mono">5100084690</td><td>AP-INV</td><td class="f-mono">89,200</td><td class="f-mono" style="font-size:9px">08:39:04</td><td><span class="badge b-ok">Posted</span></td></tr>
+              <tr class="hl-warn ae" id="e-s2-sr3"><td class="f-mono">—</td><td>AP-INV</td><td class="f-mono">56,800</td><td class="f-mono" style="font-size:9px">—</td><td><span class="badge b-warn">Pending</span></td></tr>
+              <tr class="ae" id="e-s2-sr4"><td class="f-mono">LFA1-0081</td><td>MDG-S</td><td class="f-mono">—</td><td class="f-mono" style="font-size:9px">08:21:55</td><td><span class="badge b-ok">Synced</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="s2-footer ae" id="e-s2-ft">
+      <span>⚡</span>
+      Technical events and business statuses correlated in real time — across all integration layers
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCENE 3 — ISSUE DETECTION  (30–45s)
+  ══════════════════════════════════════════ -->
+  <div class="scene" id="s3">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
+      <div>
+        <div class="scene-label">03 / 06</div>
+        <div class="scene-headline ae" id="e-s3-hd">Issue Detection &amp; Diagnosis</div>
+      </div>
+      <div class="tag b-err ae-r" id="e-s3-tag" style="border-color:var(--err-b);color:var(--err);background:var(--err-d);">
+        <span class="dot-s ds-err"></span>Automatic · Real time
+      </div>
+    </div>
+
+    <div class="s3-grid">
+      <!-- Timeline -->
+      <div class="glass ae-l" id="e-s3-tl" style="padding:12px 14px;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-m);margin-bottom:8px;">Transaction Trace — INV-2024-08472</div>
+        <div class="tl">
+          <div class="tl-item ae" id="e-s3-t1">
+            <div class="tl-ico ti-ok">✓</div>
+            <div class="tl-body">
+              <div class="tl-ttl">Invoice exported from Coupa</div>
+              <div class="tl-meta">09:14:03.221 · payload=OK · 4.2 KB</div>
+            </div>
+            <span class="badge b-ok">✓</span>
+          </div>
+          <div class="tl-item ae" id="e-s3-t2">
+            <div class="tl-ico ti-ok">✓</div>
+            <div class="tl-body">
+              <div class="tl-ttl">Message received in middleware</div>
+              <div class="tl-meta">09:14:03.489 · queue=AP_IN · latency=268 ms</div>
+            </div>
+            <span class="badge b-ok">✓</span>
+          </div>
+          <div class="tl-item ae" id="e-s3-t3">
+            <div class="tl-ico ti-ok">✓</div>
+            <div class="tl-body">
+              <div class="tl-ttl">Mapping &amp; transformation completed</div>
+              <div class="tl-meta">09:14:04.012 · IDOC_AP · 42/42 fields mapped</div>
+            </div>
+            <span class="badge b-ok">✓</span>
+          </div>
+          <div class="tl-item ae" id="e-s3-t4">
+            <div class="tl-ico ti-ok">✓</div>
+            <div class="tl-body">
+              <div class="tl-ttl">Posted to SAP ERP — FI doc 5100084720</div>
+              <div class="tl-meta">09:14:06.891 · amount=€56,800 · G/L=160000</div>
+            </div>
+            <span class="badge b-ok">✓</span>
+          </div>
+          <div class="tl-item ae" id="e-s3-t5">
+            <div class="tl-ico ti-err" style="animation:status-flash 1.2s infinite;">!</div>
+            <div class="tl-body">
+              <div class="tl-ttl c-err">ACK missing — confirmation not sent to Coupa</div>
+              <div class="tl-meta" style="color:var(--err)">Expected by 09:44:06 · SLA = 30 min · Timeout</div>
+            </div>
+            <span class="badge b-err" style="animation:status-flash 1.2s infinite;">SLA BREACH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <!-- SLA ring -->
+        <div class="sla-box ae-r" id="e-s3-sla">
+          <div style="font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-m);">SLA Timer</div>
+          <div class="sla-ring">
+            <svg viewBox="0 0 100 100" width="96" height="96">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
+              <circle id="sla-arc" cx="50" cy="50" r="42" fill="none" stroke="var(--err)" stroke-width="9"
+                stroke-dasharray="264" stroke-dashoffset="264" stroke-linecap="round"/>
+            </svg>
+            <div class="sla-center">
+              <div class="sla-val" id="sla-val">47:32</div>
+              <div class="sla-limit">/ 30:00 SLA</div>
+            </div>
+          </div>
+          <div class="sla-breach">⚠ SLA BREACH</div>
+        </div>
+
+        <!-- RCA card -->
+        <div class="rca-card ae-r" id="e-s3-rca">
+          <div class="rca-hdr">Root Cause Analysis</div>
+          <div class="rca-row">Flow: <span>AP_Invoice_OK2PAY</span></div>
+          <div class="rca-row">Error: <span>ACK_TIMEOUT</span></div>
+          <div class="rca-row">Code: <span>MW-E-0042</span></div>
+          <div class="rca-row">Impact: <span>Invoice stuck in Coupa — not confirmed</span></div>
+          <div class="rca-row">Since: <span>09:14:06 UTC (47 min ago)</span></div>
+        </div>
+
+        <!-- IRA callout -->
+        <div class="glass-gold ae" id="e-s3-note" style="padding:10px 13px;">
+          <div style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Interface Run Assurance</div>
+          <div style="font-size:11px;color:var(--text-s);line-height:1.5;">SLA breaches &amp; anomalies detected automatically — root cause correlated across all layers in real time</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCENE 4 — REMEDIATION  (45–60s)
+  ══════════════════════════════════════════ -->
+  <div class="scene" id="s4">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
+      <div>
+        <div class="scene-label">04 / 06</div>
+        <div class="scene-headline ae" id="e-s4-hd">Automated Remediation</div>
+      </div>
+      <div class="tag ae-r" id="e-s4-tag">Safe · Controlled · Audited</div>
+    </div>
+
+    <div class="s4-grid">
+      <!-- Status pane -->
+      <div class="status-pane ae-l" id="e-s4-sp">
+        <div style="font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--text-m);">Transaction Status</div>
+        <div class="s4-row"><span class="f-mono" style="font-size:10px;color:var(--text-s)">INV-2024-08472</span><span class="badge b-gold">AP Flow</span></div>
+
+        <div class="status-big sb-err" id="s4-sb">ERROR</div>
+
+        <div class="s4-row"><span class="s4-rlbl">Action</span>
+          <span class="badge b-info" id="s4-action" style="opacity:0">Replay triggered</span>
+        </div>
+        <div class="s4-row"><span class="s4-rlbl">Attempt</span>
+          <span class="f-mono" style="font-size:10.5px;color:var(--text)">1 / 3</span>
+        </div>
+        <div class="s4-row"><span class="s4-rlbl">Operator</span>
+          <span class="badge b-gold" style="font-size:8.5px">IRA Automation</span>
+        </div>
+
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;" class="ae" id="e-s4-pills">
+          <span class="badge b-info">⟳ Replay</span>
+          <span class="badge b-warn">↩ Retry</span>
+          <span class="badge b-ok">⇄ Resync</span>
+        </div>
+
+        <!-- Coupa confirmation (appears late) -->
+        <div class="app ae" id="e-s4-coupa" style="margin-top:6px;">
+          <div class="app-bar" style="padding:5px 9px;">
+            <div style="width:18px;height:18px;border-radius:4px;background:#0070D2;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;flex-shrink:0;">C</div>
+            <div class="app-lbl" style="font-size:9.5px;">Coupa — INV-2024-08472</div>
+          </div>
+          <div style="padding:7px 10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+              <span style="font-size:10.5px;color:var(--text)">Firmenich Int. · €56,800</span>
+              <span class="badge b-ok" id="coupa-ack">● CONFIRMED</span>
+            </div>
+            <div style="font-size:9px;color:var(--text-m);font-family:var(--mono)">ACK at 09:51:08 · ERP doc: 5100084720</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log terminal -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="log-term ae-r" id="e-s4-log" style="flex:1;">
+          <div class="log-topbar">
+            <div class="log-led"></div>
+            <div class="log-ttl">IRA Execution Log — AP_Invoice_OK2PAY</div>
+          </div>
+          <div class="log-body" id="log-body">
+            <div class="log-ln" id="ll1"><span class="lt">09:51:04</span><span class="lv-warn">[DETECT]</span><span style="color:var(--text-s)">SLA breach detected on INV-2024-08472 — ACK_TIMEOUT (MW-E-0042)</span></div>
+            <div class="log-ln" id="ll2"><span class="lt">09:51:04</span><span class="lv-info">[EVAL]  </span><span style="color:var(--text-s)">Matching remediation playbook → REPLAY_MSG selected</span></div>
+            <div class="log-ln" id="ll3"><span class="lt">09:51:04</span><span class="lv-sys">[AUTH]  </span><span style="color:var(--text-s)">Remediation authorized — policy=AUTO_P1 · operator=IRA</span></div>
+            <div class="log-ln" id="ll4"><span class="lt">09:51:05</span><span class="lv-info">[FETCH] </span><span style="color:var(--text-s)">Retrieving payload from message store → msg-id=84720 ✓</span></div>
+            <div class="log-ln" id="ll5"><span class="lt">09:51:05</span><span class="lv-info">[REPLAY]</span><span style="color:var(--text-s)">Replaying IDOC to SAP AP endpoint — attempt 1/3</span></div>
+            <div class="log-ln" id="ll6"><span class="lt">09:51:07</span><span class="lv-ok">[SAP]   </span><span style="color:var(--text-s)">SAP acknowledged → FI doc 5100084720 confirmed ✓</span></div>
+            <div class="log-ln" id="ll7"><span class="lt">09:51:08</span><span class="lv-ok">[ACK]   </span><span style="color:var(--text-s)">ACK forwarded to Coupa → INV-2024-08472 → CONFIRMED ✓</span></div>
+            <div class="log-ln" id="ll8"><span class="lt">09:51:08</span><span class="lv-ok">[DONE]  </span><span style="color:var(--ok);font-weight:600">Remediation successful — transaction closed in 4.2 s ✓</span></div>
+          </div>
+        </div>
+
+        <div class="glass-gold ae" id="e-s4-ft" style="padding:10px 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11.5px;color:var(--gold);font-weight:500">Replayed · Retried · Resynced — zero manual steps</span>
+          <span class="badge b-ok">Resolved in 4s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCENE 5 — ITSM TICKET  (60–75s)
+  ══════════════════════════════════════════ -->
+  <div class="scene" id="s5">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
+      <div>
+        <div class="scene-label">05 / 06</div>
+        <div class="scene-headline ae" id="e-s5-hd">Run-Ready ITSM Tickets</div>
+      </div>
+      <div class="tag ae-r" id="e-s5-tag">Auto-generated · Evidence attached</div>
+    </div>
+
+    <div class="s5-grid">
+      <!-- Ticket -->
+      <div class="ticket ae-l" id="e-s5-tk">
+        <div class="ticket-hdr">
+          <div>
+            <div class="ticket-src">ServiceNow — Incident Management</div>
+            <div class="ticket-num">INC0084720</div>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center;">
+            <span class="badge b-p1">P1 CRITICAL</span>
+            <span class="badge b-ok" style="font-size:9px;">AUTO-CREATED</span>
+          </div>
+        </div>
+        <div class="ticket-body">
+          <div class="t-title ae" id="e-s5-tt">
+            Invoice OK2PAY — Missing ACK — SLA Breach (AP Flow)
+          </div>
+          <div class="f-grid">
+            <div class="field ae" id="e-s5-f1"><div class="f-lbl">Impacted Flow</div><div class="f-val">AP_Invoice_OK2PAY</div></div>
+            <div class="field ae" id="e-s5-f2"><div class="f-lbl">Transaction</div><div class="f-val">INV-2024-08472</div></div>
+            <div class="field ae" id="e-s5-f3"><div class="f-lbl">Root Cause</div><div class="f-val">ACK_TIMEOUT (MW-E-0042)</div></div>
+            <div class="field ae" id="e-s5-f4"><div class="f-lbl">SLA Breach</div><div class="f-val c-err">+17:32 over threshold</div></div>
+            <div class="field ae" id="e-s5-f5"><div class="f-lbl">Detected At</div><div class="f-val">09:51:04 UTC</div></div>
+            <div class="field ae" id="e-s5-f6"><div class="f-lbl">Remediation</div><div class="f-val c-ok">REPLAY — Success ✓</div></div>
+          </div>
+          <div class="ae" id="e-s5-att">
+            <div class="attach-lbl">Evidence Attached</div>
+            <div class="attach-list">
+              <div class="attach-row"><div class="attach-ico" style="background:var(--info-d);border:1px solid var(--info-b);color:var(--info);">{ }</div>middleware-trace-84720.json</div>
+              <div class="attach-row"><div class="attach-ico" style="background:var(--gold-dim);border:1px solid rgba(201,168,76,.25);color:var(--gold);">≡</div>sla-breach-report.log</div>
+              <div class="attach-row"><div class="attach-ico" style="background:var(--ok-d);border:1px solid var(--ok-b);color:var(--ok);">↩</div>remediation-result.json</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side -->
+      <div class="s5-side">
+        <div class="glass-ok ae-r" id="e-s5-s1" style="padding:12px 14px;">
+          <div style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ok);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><span>⚡</span>Auto-generated by IRA</div>
+          <div style="font-size:11px;color:var(--text-s);line-height:1.55;">IRA creates tickets with all evidence pre-filled. Run teams receive actionable incidents — no manual investigation required.</div>
+        </div>
+
+        <div class="glass ae-r" id="e-s5-s2" style="padding:12px 14px;flex:1;">
+          <div style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-m);margin-bottom:8px;">Suggested Remediation</div>
+          <div class="tl">
+            <div class="tl-item"><div class="tl-ico ti-ok" style="font-size:10px;">1</div><div class="tl-body"><div class="tl-ttl">Replay from message store</div><div class="tl-meta">msg-id 84720 · available in AP_IN queue</div></div></div>
+            <div class="tl-item"><div class="tl-ico ti-ok" style="font-size:10px;">2</div><div class="tl-body"><div class="tl-ttl">Verify SAP acknowledgement</div><div class="tl-meta">Check FI doc 5100084720 in FB03</div></div></div>
+            <div class="tl-item"><div class="tl-ico ti-ok" style="font-size:10px;">3</div><div class="tl-body"><div class="tl-ttl">Confirm Coupa status update</div><div class="tl-meta">Invoice should reach CONFIRMED state</div></div></div>
+          </div>
+        </div>
+
+        <div class="glass-gold ae" id="e-s5-s3" style="padding:10px 13px;">
+          <div style="font-size:12px;color:var(--gold);font-weight:500;">Run-ready tickets — with evidence and suggested remediation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCENE 6 — DASHBOARD & AI AGENT  (75–90s)
+  ══════════════════════════════════════════ -->
+  <div class="scene" id="s6">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;flex-shrink:0;">
+      <div>
+        <div class="scene-label">06 / 06</div>
+        <div class="scene-headline ae" id="e-s6-hd">Dashboard &amp; AI Co-pilot</div>
+      </div>
+      <div style="display:flex;gap:7px;" class="ae-r" id="e-s6-tags">
+        <div class="tag">Executive View</div>
+        <div class="tag tag-info">Run View</div>
+      </div>
+    </div>
+
+    <div class="s6-grid">
+      <!-- Left: KPIs + chart + incidents -->
+      <div class="dash-left">
+        <div class="kpi-row">
+          <div class="kpi ae-s" id="e-s6-k1"><div class="kpi-lbl">Transactions Today</div><div class="kpi-val" id="kpi-tx">0</div><div class="kpi-sub kpi-up">↑ +3.2% vs yesterday</div></div>
+          <div class="kpi kpi-gold ae-s" id="e-s6-k2"><div class="kpi-lbl">SLA Compliance</div><div class="kpi-val c-ok">99.2%</div><div class="kpi-sub kpi-up">↑ On target</div></div>
+          <div class="kpi ae-s" id="e-s6-k3"><div class="kpi-lbl">Open Incidents</div><div class="kpi-val c-warn">3</div><div class="kpi-sub kpi-warn">2 auto-remediated</div></div>
+          <div class="kpi ae-s" id="e-s6-k4"><div class="kpi-lbl">Avg Resolution</div><div class="kpi-val">2.3<span style="font-size:15px;color:var(--text-s)"> min</span></div><div class="kpi-sub kpi-up">↓ −40% vs last week</div></div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-wrap ae" id="e-s6-chart">
+          <div class="chart-hdr">
+            <span class="chart-ttl">Transaction Volume — Today</span>
+            <span class="badge b-gold">Hourly</span>
+          </div>
+          <svg id="tx-chart" preserveAspectRatio="none"></svg>
+        </div>
+
+        <!-- Incidents -->
+        <div class="inc-panel ae" id="e-s6-inc">
+          <div class="panel-hdr"><span class="ph-ttl">Open Incidents</span><span class="badge b-warn">3 active</span></div>
+          <div class="inc-row"><span class="inc-id">INC0084723</span><span class="badge b-p1">P1</span><span class="inc-ttl">AP Invoice — ACK timeout (Supplier B)</span><span class="badge b-warn" style="font-size:8.5px;flex-shrink:0;">Replaying</span><span class="inc-age">4 min</span></div>
+          <div class="inc-row"><span class="inc-id">INC0084715</span><span class="badge b-p2">P2</span><span class="inc-ttl">Supplier Master — MDG sync delayed</span><span class="badge b-info" style="font-size:8.5px;flex-shrink:0;">Monitoring</span><span class="inc-age">31 min</span></div>
+          <div class="inc-row" style="opacity:.45;"><span class="inc-id">INC0084720</span><span class="badge b-p1" style="opacity:.5">P1</span><span class="inc-ttl" style="text-decoration:line-through;">AP Invoice — Missing ACK (Firmenich)</span><span class="badge b-ok" style="font-size:8.5px;flex-shrink:0;">Resolved</span><span class="inc-age">9 min</span></div>
+        </div>
+      </div>
+
+      <!-- Right: AI panel -->
+      <div class="ai-panel ae-r" id="e-s6-ai">
+        <div class="ai-panel-hdr">
+          <div class="ai-avatar">AI</div>
+          <div>
+            <div class="ai-hdr-name">Interface Run Assurance Agent</div>
+            <div class="ai-hdr-status"><span class="dot-s ds-ok"></span>Available</div>
+          </div>
+        </div>
+        <div class="ai-chat">
+          <div class="cm cm-user ae" id="e-s6-q1">Which flows have SLA breaches today?</div>
+          <div class="cm cm-ai ae" id="e-s6-a1">
+            <strong class="hi">2 SLA breaches</strong> detected today:<br><br>
+            • <span class="er">AP_Invoice_OK2PAY</span> — <span class="hi">+17:32</span> over threshold (P1)<br>
+            • <span class="er">Supplier_MDG_Sync</span> — <span class="hi">+8:12</span> over threshold (P2)<br><br>
+            <span class="ok">✓ AP flow auto-remediated at 09:51 — resolved in 4 s.</span><br>
+            MDG flow monitored — no replay required yet.
+          </div>
+          <div class="cm cm-user ae" id="e-s6-q2">What is the business impact?</div>
+          <div class="cm cm-ai ae" id="e-s6-a2">
+            <span class="ok">Impact contained.</span> INV-2024-08472 (€56,800) confirmed in Coupa after automatic replay. MDG delay affects 1 vendor record — no payment blocked.
+          </div>
+        </div>
+        <div class="ai-footer">
+          <div class="ai-btn ai-btn-pulse ae" id="e-s6-btn">
+            <span>✦</span> Ask the AI agent
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- END FRAME -->
+  <div id="end">
+    <div class="end-logo">Interface Run Assurance</div>
+    <div class="end-tagline">Enterprise AI for Integration Run Control</div>
+    <div class="end-divider"></div>
+    <div class="end-co">BearingPoint &nbsp;·&nbsp; LVMH Beauty</div>
+  </div>
+
+  <!-- Controls -->
+  <div id="ctrls">
+    <div id="btn-pp">
+      <svg id="ico-pause" viewBox="0 0 24 24"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>
+      <svg id="ico-play" viewBox="0 0 24 24" style="display:none"><polygon points="5,3 19,12 5,21"/></svg>
+    </div>
+    <div id="timecode">0:00 / 1:30</div>
+    <div id="scene-name-ctrl" style="opacity:.6">—</div>
+  </div>
+
+</div><!-- #shell -->
+
+<script>
+/* ════════════════════════════════════════════
+   CONSTANTS
+════════════════════════════════════════════ */
+const SCENE_DUR   = 15000;   // ms per scene
+const TOTAL_DUR   = 90000;   // ms total
+const TRANS_DUR   = 650;     // ms transition fade
+const NUM_SCENES  = 6;
+
+const SCENE_NAMES = [
+  'Context & Promise',
+  'Transaction Monitoring',
+  'Issue Detection',
+  'Automated Remediation',
+  'ITSM Tickets',
+  'Dashboard & AI'
+];
+
+/* ════════════════════════════════════════════
+   ANIMATION SCHEDULES
+   Each entry: { id, cls, delay }
+════════════════════════════════════════════ */
+const SCHEDS = {
+  0:[
+    {id:'e-s1-0',cls:'in',d:280},{id:'e-s1-1',cls:'in',d:680},
+    {id:'e-s1-2',cls:'in',d:1150},{id:'e-s1-3',cls:'in',d:2100},
+    {id:'e-s1-4',cls:'in',d:3300},{id:'e-s1-5',cls:'in',d:4100},
+    {id:'e-s1-6',cls:'in',d:4800},{id:'e-s1-7',cls:'in',d:5400},
+    {id:'e-s1-8',cls:'in',d:6000},
+  ],
+  1:[
+    {id:'e-s2-hd',cls:'in',d:200},{id:'e-s2-tag',cls:'in',d:400},
+    {id:'e-s2-coupa',cls:'in',d:500},{id:'e-s2-mw',cls:'in',d:700},
+    {id:'e-s2-sap',cls:'in',d:900},
+    {id:'e-s2-r1',cls:'in',d:1300},{id:'e-s2-r2',cls:'in',d:1700},
+    {id:'e-s2-r3',cls:'in',d:2100},{id:'e-s2-r4',cls:'in',d:2500},
+    {id:'e-s2-sr1',cls:'in',d:1500},{id:'e-s2-sr2',cls:'in',d:1900},
+    {id:'e-s2-sr3',cls:'in',d:2300},{id:'e-s2-sr4',cls:'in',d:2700},
+    {id:'e-s2-ft',cls:'in',d:4500},
+  ],
+  2:[
+    {id:'e-s3-hd',cls:'in',d:200},{id:'e-s3-tag',cls:'in',d:400},
+    {id:'e-s3-tl',cls:'in',d:500},
+    {id:'e-s3-t1',cls:'in',d:800},{id:'e-s3-t2',cls:'in',d:1400},
+    {id:'e-s3-t3',cls:'in',d:2000},{id:'e-s3-t4',cls:'in',d:2600},
+    {id:'e-s3-t5',cls:'in',d:3400},
+    {id:'e-s3-sla',cls:'in',d:3800},{id:'e-s3-rca',cls:'in',d:5200},
+    {id:'e-s3-note',cls:'in',d:7000},
+  ],
+  3:[
+    {id:'e-s4-hd',cls:'in',d:200},{id:'e-s4-tag',cls:'in',d:400},
+    {id:'e-s4-sp',cls:'in',d:500},
+    {id:'e-s4-log',cls:'in',d:700},{id:'e-s4-pills',cls:'in',d:1800},
+    /* log lines triggered separately in startScene4 */
+    {id:'e-s4-ft',cls:'in',d:9000},
+  ],
+  4:[
+    {id:'e-s5-hd',cls:'in',d:200},{id:'e-s5-tag',cls:'in',d:400},
+    {id:'e-s5-tk',cls:'in',d:500},
+    {id:'e-s5-s1',cls:'in',d:700},{id:'e-s5-s2',cls:'in',d:1200},{id:'e-s5-s3',cls:'in',d:2000},
+    {id:'e-s5-tt',cls:'in',d:1000},
+    {id:'e-s5-f1',cls:'in',d:1500},{id:'e-s5-f2',cls:'in',d:2000},
+    {id:'e-s5-f3',cls:'in',d:2500},{id:'e-s5-f4',cls:'in',d:3000},
+    {id:'e-s5-f5',cls:'in',d:3500},{id:'e-s5-f6',cls:'in',d:4000},
+    {id:'e-s5-att',cls:'in',d:5000},
+  ],
+  5:[
+    {id:'e-s6-hd',cls:'in',d:200},{id:'e-s6-tags',cls:'in',d:400},
+    {id:'e-s6-k1',cls:'in',d:500},{id:'e-s6-k2',cls:'in',d:700},
+    {id:'e-s6-k3',cls:'in',d:900},{id:'e-s6-k4',cls:'in',d:1100},
+    {id:'e-s6-chart',cls:'in',d:1600},{id:'e-s6-inc',cls:'in',d:2200},
+    {id:'e-s6-ai',cls:'in',d:2800},
+    {id:'e-s6-q1',cls:'in',d:3800},{id:'e-s6-a1',cls:'in',d:5000},
+    {id:'e-s6-q2',cls:'in',d:8000},{id:'e-s6-a2',cls:'in',d:9200},
+    {id:'e-s6-btn',cls:'in',d:11000},
+  ],
+};
+
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+let startTime   = null;
+let pausedAt    = 0;
+let isPaused    = false;
+let curScene    = -1;
+let animTimers  = [];
+let rafId       = null;
+let sceneTimer  = null;
+
+/* ════════════════════════════════════════════
+   DOM REFS
+════════════════════════════════════════════ */
+const shell     = document.getElementById('shell');
+const scenes    = document.querySelectorAll('.scene');
+const dots      = document.querySelectorAll('.sdot');
+const progFill  = document.getElementById('prog-fill');
+const timecode  = document.getElementById('timecode');
+const sceneCtrl = document.getElementById('scene-name-ctrl');
+const flashEl   = document.getElementById('flash');
+const endEl     = document.getElementById('end');
+const icoPause  = document.getElementById('ico-pause');
+const icoPlay   = document.getElementById('ico-play');
+const capEl     = document.getElementById('scene-cap');
+
+/* ════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════ */
+function clrTimers(){animTimers.forEach(id=>clearTimeout(id));animTimers=[];}
+
+function addTimer(fn,d){animTimers.push(setTimeout(fn,d));}
+
+function resetEls(){
+  Object.values(SCHEDS).flat().forEach(({id,cls})=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.remove(cls);
+  });
+  // also reset log lines
+  document.querySelectorAll('.log-ln').forEach(el=>el.classList.remove('vis'));
+}
+
+function showCaption(name){
+  capEl.textContent=name;
+  capEl.classList.add('vis');
+  addTimer(()=>capEl.classList.remove('vis'),2500);
+}
+
+/* ════════════════════════════════════════════
+   SCENE DISPLAY
+════════════════════════════════════════════ */
+function showScene(idx){
+  if(idx<0||idx>=NUM_SCENES)return;
+
+  // Flash effect
+  flashEl.style.opacity='0.2';
+  setTimeout(()=>flashEl.style.opacity='0',160);
+
+  // Hide old
+  if(curScene>=0){
+    scenes[curScene].classList.remove('active');
+    dots[curScene].classList.remove('cur');
+    dots[curScene].classList.add('done');
+  }
+
+  curScene=idx;
+  scenes[idx].classList.add('active');
+  dots[idx].classList.add('cur');
+  sceneCtrl.textContent=SCENE_NAMES[idx];
+  showCaption(SCENE_NAMES[idx]);
+
+  // Run anim schedule
+  clrTimers();
+  const sched=SCHEDS[idx]||[];
+  sched.forEach(({id,cls,d})=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.classList.remove(cls);
+    addTimer(()=>el.classList.add(cls),d);
+  });
+
+  // Scene-specific logic
+  if(idx===0)startScene1();
+  if(idx===2)startScene3();
+  if(idx===3)startScene4();
+  if(idx===5)startScene6();
+}
+
+function scheduleNext(idx){
+  sceneTimer=setTimeout(()=>{
+    if(idx<NUM_SCENES-1){
+      showScene(idx+1);
+      scheduleNext(idx+1);
+    } else {
+      // Final end frame
+      setTimeout(()=>endEl.classList.add('show'),SCENE_DUR);
+    }
+  },SCENE_DUR);
+}
+
+/* ════════════════════════════════════════════
+   PLAYBACK
+════════════════════════════════════════════ */
+function startPlayback(){
+  startTime=Date.now()-pausedAt;
+  isPaused=false;
+  icoPause.style.display='block';
+  icoPlay.style.display='none';
+  tickProgress();
+  if(curScene<0){showScene(0);scheduleNext(0);}
+}
+
+function pausePlayback(){
+  isPaused=true;
+  pausedAt=Date.now()-startTime;
+  cancelAnimationFrame(rafId);
+  clearTimeout(sceneTimer);
+  icoPause.style.display='none';
+  icoPlay.style.display='block';
+}
+
+function jumpTo(idx){
+  clearTimeout(sceneTimer);
+  cancelAnimationFrame(rafId);
+  clrTimers();
+  resetEls();
+  scenes.forEach(s=>s.classList.remove('active'));
+  dots.forEach((d,i)=>{d.classList.remove('cur','done');if(i<idx)d.classList.add('done');});
+  endEl.classList.remove('show');
+  curScene=-1;
+  pausedAt=idx*SCENE_DUR;
+  startTime=Date.now()-pausedAt;
+  isPaused=false;
+  showScene(idx);
+  scheduleNext(idx);
+  tickProgress();
+  icoPause.style.display='block';
+  icoPlay.style.display='none';
+}
+
+function tickProgress(){
+  if(isPaused)return;
+  const elapsed=Date.now()-startTime;
+  const pct=Math.min(100,(elapsed/TOTAL_DUR)*100);
+  progFill.style.width=pct+'%';
+  const sec=Math.min(90,Math.floor(elapsed/1000));
+  timecode.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} / 1:30`;
+  rafId=requestAnimationFrame(tickProgress);
+}
+
+/* ════════════════════════════════════════════
+   EVENTS
+════════════════════════════════════════════ */
+document.getElementById('btn-pp').addEventListener('click',()=>isPaused?startPlayback():pausePlayback());
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();isPaused?startPlayback():pausePlayback();}
+  if(e.key==='ArrowRight')jumpTo(Math.min(NUM_SCENES-1,(curScene||0)+1));
+  if(e.key==='ArrowLeft') jumpTo(Math.max(0,(curScene||0)-1));
+});
+dots.forEach((d,i)=>d.addEventListener('click',()=>jumpTo(i)));
+
+/* ════════════════════════════════════════════
+   AUTO START
+════════════════════════════════════════════ */
+setTimeout(startPlayback,800);
+
+/* ════════════════════════════════════════════
+   SCENE 1 — counter
+════════════════════════════════════════════ */
+function startScene1(){
+  const el=document.getElementById('s1-tx');
+  if(!el)return;
+  let v=0;const target=1247;
+  const t=setInterval(()=>{
+    v=Math.min(target,v+Math.ceil((target-v)/6)+3);
+    el.textContent=v.toLocaleString('fr');
+    if(v>=target)clearInterval(t);
+  },50);
+  animTimers.push(t);
+}
+
+/* ════════════════════════════════════════════
+   SCENE 3 — SLA ring animation
+════════════════════════════════════════════ */
+function startScene3(){
+  const arc=document.getElementById('sla-arc');
+  if(!arc)return;
+  // animate stroke-dashoffset from 264 → 0 over 2.5s (starting at scene+3.8s when box appears)
+  addTimer(()=>{
+    arc.style.transition='stroke-dashoffset 2.5s ease-out';
+    arc.style.strokeDashoffset='0';
+  },4000);
+}
+
+/* ════════════════════════════════════════════
+   SCENE 4 — log reveal + status transitions
+════════════════════════════════════════════ */
+const LOG_IDS=['ll1','ll2','ll3','ll4','ll5','ll6','ll7','ll8'];
+const LOG_DELAYS=[1200,2000,2600,3100,3700,5200,6400,7200];
+function startScene4(){
+  const sb=document.getElementById('s4-sb');
+  const action=document.getElementById('s4-action');
+  const coupaEl=document.getElementById('e-s4-coupa');
+  if(!sb)return;
+  // Show log lines
+  LOG_IDS.forEach((id,i)=>{
+    addTimer(()=>{
+      const el=document.getElementById(id);
+      if(el)el.classList.add('vis');
+    },LOG_DELAYS[i]);
+  });
+  // Status transitions
+  addTimer(()=>{if(action){action.style.opacity='1';}sb.className='status-big sb-proc';sb.textContent='PROCESSING…';},4000);
+  addTimer(()=>{sb.className='status-big sb-ok';sb.textContent='RESOLVED ✓';},7400);
+  addTimer(()=>{if(coupaEl)coupaEl.classList.add('in');},8200);
+}
+
+/* ════════════════════════════════════════════
+   SCENE 6 — KPI counter + SVG chart
+════════════════════════════════════════════ */
+function startScene6(){
+  // KPI counter
+  const el=document.getElementById('kpi-tx');
+  if(el){
+    let v=0;const tgt=1247;
+    const t=setInterval(()=>{
+      v=Math.min(tgt,v+Math.ceil((tgt-v)/5)+5);
+      el.textContent=v.toLocaleString('fr');
+      if(v>=tgt)clearInterval(t);
+    },40);
+    animTimers.push(t);
+  }
+  // Draw SVG chart after it becomes visible
+  addTimer(drawChart,1800);
+}
+
+function drawChart(){
+  const svg=document.getElementById('tx-chart');
+  if(!svg)return;
+  const W=svg.clientWidth||320;
+  const H=svg.clientHeight||80;
+  const data=[12,8,4,3,5,28,95,187,231,142];
+  const labels=['00','01','02','03','04','05','06','07','08','09'];
+  const maxV=Math.max(...data)*1.12;
+  const pad={t:8,r:12,b:18,l:28};
+  const cW=W-pad.l-pad.r;
+  const cH=H-pad.t-pad.b;
+
+  const pts=data.map((v,i)=>({
+    x:pad.l+(i/(data.length-1))*cW,
+    y:pad.t+cH-(v/maxV)*cH
+  }));
+
+  // Grid lines (3 horizontal)
+  let grid='';
+  [0.25,0.5,0.75].forEach(f=>{
+    const y=pad.t+cH*(1-f);
+    grid+=`<line x1="${pad.l}" y1="${y}" x2="${pad.l+cW}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+    grid+=`<text x="${pad.l-4}" y="${y+3.5}" fill="rgba(148,163,184,0.5)" font-size="6" text-anchor="end" font-family="JetBrains Mono,monospace">${Math.round(maxV*f)}</text>`;
+  });
+
+  // Bezier path
+  let line=`M ${pts[0].x} ${pts[0].y}`;
+  for(let i=1;i<pts.length;i++){
+    const cp1x=pts[i-1].x+(pts[i].x-pts[i-1].x)/2.5;
+    const cp2x=pts[i].x-(pts[i].x-pts[i-1].x)/2.5;
+    line+=` C ${cp1x} ${pts[i-1].y} ${cp2x} ${pts[i].y} ${pts[i].x} ${pts[i].y}`;
+  }
+  const area=line+` L ${pts[pts.length-1].x} ${pad.t+cH} L ${pts[0].x} ${pad.t+cH} Z`;
+
+  // X-axis labels
+  let xlbls='';
+  pts.forEach((p,i)=>{
+    xlbls+=`<text x="${p.x}" y="${H-2}" fill="rgba(100,116,139,.7)" font-size="6.5" text-anchor="middle" font-family="JetBrains Mono,monospace">${labels[i]}</text>`;
+  });
+
+  // Last point highlight
+  const last=pts[pts.length-1];
+
+  // Measure path length for animation
+  svg.innerHTML=`
+    <defs>
+      <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#C9A84C" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#C9A84C" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <path d="${area}" fill="url(#cg)"/>
+    <path id="chart-line-path" d="${line}" fill="none" stroke="#C9A84C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="#C9A84C" opacity="0.6"/>`).join('')}
+    <circle cx="${last.x}" cy="${last.y}" r="4" fill="#C9A84C" opacity="1"/>
+    <circle cx="${last.x}" cy="${last.y}" r="7" fill="none" stroke="#C9A84C" stroke-width="1" opacity="0.4"/>
+    ${xlbls}
+    <text x="${pad.l+cW}" y="${pad.t+8}" fill="#C9A84C" font-size="7" text-anchor="end" font-family="JetBrains Mono,monospace" font-weight="600">09:51 ↑</text>
+  `;
+
+  // Animate line draw
+  const pathEl=document.getElementById('chart-line-path');
+  if(pathEl){
+    try{
+      const len=pathEl.getTotalLength();
+      pathEl.style.strokeDasharray=len;
+      pathEl.style.strokeDashoffset=len;
+      pathEl.style.transition='stroke-dashoffset 1.6s ease-out';
+      setTimeout(()=>pathEl.style.strokeDashoffset='0',100);
+    }catch(e){}
+  }
+}
+
+/* ════════════════════════════════════════════
+   PARTICLE CANVAS
+════════════════════════════════════════════ */
+(function(){
+  const canvas=document.getElementById('canvas-bg');
+  const ctx=canvas.getContext('2d');
+  let W,H,nodes=[];
+  function resize(){W=canvas.width=shell.offsetWidth;H=canvas.height=shell.offsetHeight;}
+  function init(){
+    resize();nodes=[];
+    for(let i=0;i<60;i++){
+      nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.8+.6});
+    }
+    loop();
+  }
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    nodes.forEach(n=>{
+      n.x+=n.vx;n.y+=n.vy;
+      if(n.x<0||n.x>W)n.vx*=-1;
+      if(n.y<0||n.y>H)n.vy*=-1;
+      ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(201,168,76,0.28)';ctx.fill();
+    });
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<110){
+          ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);
+          ctx.strokeStyle=`rgba(201,168,76,${.1*(1-d/110)})`;ctx.lineWidth=.5;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  new ResizeObserver(resize).observe(shell);
+  init();
+})();
+</script>
+</body>
+</html>

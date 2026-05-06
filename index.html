@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Interface Run Assurance — BearingPoint × LVMH Beauty</title>
+<style>
+:root{
+  --bg:#0b0e14;
+  --bg2:#090c12;
+  --panel:#101726;
+  --panel2:#141c2b;
+  --panelSoft:#161f30;
+  --stroke:#232b3f;
+  --text:#e8ebf2;
+  --muted:#9aa4b2;
+  --muted2:#7c8797;
+  --accent:#d6b26c;
+  --accent2:#caa45a;
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --shadow: 0 24px 60px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 700px at 15% 20%, rgba(214,178,108,.18), transparent 45%),
+    radial-gradient(1000px 650px at 85% 80%, rgba(37,99,235,.18), transparent 45%),
+    radial-gradient(900px 600px at 70% 10%, rgba(239,68,68,.10), transparent 42%),
+    linear-gradient(180deg, var(--bg), var(--bg2));
+}
+
+/* Layout */
+.app{display:flex; height:100vh;}
+.sidebar{
+  width:300px;
+  padding:22px;
+  border-right:1px solid var(--stroke);
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+}
+.main{flex:1; padding:26px 34px; overflow:hidden;}
+.page{display:none; height:100%; overflow:auto; padding-right:6px;}
+.page.active{display:block;}
+
+/* Sidebar header */
+.brandCard{
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+  border:1px solid var(--stroke);
+  border-radius:18px;
+  padding:14px;
+  box-shadow: var(--shadow);
+}
+.brandRow{display:flex; align-items:center; gap:10px;}
+.logoMark{
+  width:44px; height:44px; border-radius:14px;
+  background: linear-gradient(135deg, rgba(214,178,108,.95), rgba(202,164,90,.75));
+  display:grid; place-items:center;
+  color:#0b0e14; font-weight:900;
+}
+.brandText{display:flex; flex-direction:column;}
+.brandText .top{font-weight:850; letter-spacing:.02em;}
+.brandText .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+
+.demoBtn{
+  margin-top:12px;
+  display:flex; align-items:center; gap:10px;
+  background: rgba(239,68,68,.16);
+  border:1px solid rgba(239,68,68,.28);
+  color:var(--text);
+  padding:12px 12px;
+  border-radius:16px;
+  cursor:pointer;
+  font-weight:700;
+}
+.demoBtn:hover{background: rgba(239,68,68,.20);}
+
+/* Nav */
+.navBlock{margin-top:16px;}
+.navTitle{
+  margin:18px 8px 10px;
+  font-size:11px;
+  letter-spacing:.14em;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+.nav a{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 12px;
+  border-radius:14px;
+  cursor:pointer;
+  border:1px solid transparent;
+  color:var(--text);
+  text-decoration:none;
+}
+.nav a:hover{background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.04);}
+.nav a.active{background: rgba(255,255,255,.05); border-color: var(--stroke);}
+
+.navIcon{width:18px; height:18px; opacity:.9}
+
+.cta{
+  margin-top:18px;
+  width:100%;
+  padding:14px;
+  border-radius:16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border:0;
+  cursor:pointer;
+  font-weight:800;
+  color:#0b0e14;
+}
+
+/* Cards & typography */
+.kicker{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);}
+.h1{font-size:40px; font-weight:900; letter-spacing:-.02em; margin:10px 0 14px; line-height:1.15;}
+.h2{font-size:26px; font-weight:900; margin:0 0 14px;}
+.h3{font-size:16px; font-weight:850; margin:0 0 8px;}
+.p{color:var(--muted); font-size:14px; line-height:1.6; margin:0;}
+
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+  border:1px solid var(--stroke);
+  border-radius:22px;
+  padding:26px;
+  box-shadow: var(--shadow);
+}
+.card + .card{margin-top:18px;}
+
+.grid{display:grid; gap:16px;}
+.grid2{grid-template-columns:1fr 1fr;}
+.grid3{grid-template-columns:repeat(3, 1fr);}
+.grid4{grid-template-columns:repeat(4, 1fr);}
+@media (max-width: 1100px){
+  .sidebar{display:none}
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+}
+
+.pills{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px;}
+.pill{
+  padding:8px 12px;
+  border-radius:999px;
+  background: rgba(255,255,255,.03);
+  border:1px solid var(--stroke);
+  color:var(--muted);
+  font-size:12px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+}
+.badge.green{background: rgba(34,197,94,.12); color: var(--green); border:1px solid rgba(34,197,94,.20);}
+.badge.amber{background: rgba(245,158,11,.12); color: var(--amber); border:1px solid rgba(245,158,11,.22);}
+.badge.red{background: rgba(239,68,68,.12); color: var(--red); border:1px solid rgba(239,68,68,.20);}
+.badge.gray{background: rgba(148,163,184,.10); color: #cbd5e1; border:1px solid rgba(148,163,184,.18);}
+
+.kpi{
+  font-size:36px;
+  font-weight:950;
+  letter-spacing:-.02em;
+}
+.kpiSub{font-size:12px; color:var(--muted); margin-top:6px;}
+
+/* Mini charts */
+.spark{width:100%; height:48px; margin-top:10px;}
+
+/* Tables (demo visuals) */
+.tableCard{
+  background: rgba(0,0,0,.18);
+  border:1px solid var(--stroke);
+  border-radius:18px;
+  overflow:hidden;
+}
+.tableHead{
+  padding:14px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--stroke);
+  background: rgba(255,255,255,.02);
+}
+.fileName{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight:800;}
+.tableBody{padding:14px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:13px; color:#d7dbe6;}
+.tableRow{display:grid; grid-template-columns: 2fr 1fr 1fr; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04);} 
+.tableRow:last-child{border-bottom:0}
+.tableCols{color:var(--muted2); font-weight:800; text-transform:lowercase;}
+
+.codeStrip{
+  margin-top:14px;
+  padding:14px 16px;
+  border-radius:16px;
+  border:1px solid var(--stroke);
+  background: rgba(0,0,0,.28);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size:13px;
+  color:#e7eaf2;
+}
+
+/* Ticket list */
+.ticketTable{width:100%; border-collapse:collapse;}
+.ticketTable th{
+  text-align:left; font-size:12px; color:var(--muted); font-weight:800; padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.ticketTable td{padding:10px 0; border-bottom:1px solid rgba(255,255,255,.04); font-size:13px;}
+
+.btnRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+.btn{
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid var(--stroke);
+  background: rgba(255,255,255,.03);
+  color:var(--text);
+  cursor:pointer;
+  font-weight:800;
+}
+.btn:hover{background: rgba(255,255,255,.05);}
+.btnPrimary{background: linear-gradient(135deg, var(--accent), var(--accent2)); color:#0b0e14; border:0;}
+
+/* Modal */
+.modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,.6);}
+.modalBox{width:520px; max-width:calc(100% - 32px); background: var(--panel); border:1px solid var(--stroke); border-radius:22px; padding:22px; box-shadow: var(--shadow);} 
+.modalTop{display:flex; justify-content:space-between; align-items:center;}
+.x{cursor:pointer; color:var(--muted); font-weight:900;}
+
+/* Chat */
+.chat{position:fixed; right:20px; bottom:20px; width:360px; max-width: calc(100% - 40px);
+  background: var(--panel); border:1px solid var(--stroke); border-radius:18px; display:none; flex-direction:column; box-shadow: var(--shadow);
+}
+.chatHeader{padding:12px 14px; border-bottom:1px solid var(--stroke); display:flex; justify-content:space-between; align-items:center; font-weight:900;}
+.chatBody{padding:14px; max-height:280px; overflow:auto;}
+.bubble{padding:10px 12px; border-radius:14px; margin-bottom:10px; font-size:13px; line-height:1.45;}
+.user{background: rgba(37,99,235,.14); border:1px solid rgba(37,99,235,.20);}
+.bot{background: rgba(214,178,108,.14); border:1px solid rgba(214,178,108,.20); color:#f1f3f7;}
+.chatFooter{display:flex; gap:10px; padding:12px 14px; border-top:1px solid var(--stroke);} 
+.chatFooter input{flex:1; border:1px solid var(--stroke); background: rgba(0,0,0,.18); border-radius:14px; padding:10px 12px; color:var(--text);} 
+
+.smallNote{font-size:12px; color:var(--muted); margin-top:8px}
+
+/* =====================================================
+   FIX Key features icons
+   - smaller
+   - gold like "Ask the AI agent"
+   ===================================================== */
+
+#page-key svg.icon {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 6px;
+
+  /* same gold as the CTA button */
+  color: var(--accent);
+  fill: currentColor !important;
+
+  opacity: 0.9;
+}
+
+/* Safety override if SVG paths define their own fill */
+#page-key svg.icon path {
+  fill: currentColor !important;
+}
+
+/* =====================================================
+   ICON FIXES – How it works & Key features
+   ===================================================== */
+
+/* HOW IT WORKS
+   - icons too big
+   - icons too dark
+*/
+#page-how svg.icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 12px;
+
+  /* gold color like "Ask the AI agent" */
+  color: var(--accent);
+  fill: currentColor !important;
+
+  opacity: 0.9;
+}
+
+/* KEY FEATURES
+   - smaller icons
+   - same gold as CTA
+*/
+#page-key svg.icon {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 6px;
+
+  color: var(--accent);
+  fill: currentColor !important;
+
+  opacity: 0.9;
+}
+
+/* Safety: override inline SVG fills */
+#page-how svg.icon path,
+#page-key svg.icon path {
+  fill: currentColor !important;
+}
+
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brandCard">
+      <div class="brandRow">
+        <div class="logoMark">B°</div>
+        <div class="brandText">
+          <div class="top">BearingPoint × LVMH Beauty</div>
+          <div class="sub">Demo mode · Interface Run Assurance</div>
+        </div>
+      </div>
+      <div class="demoBtn" onclick="openDemo()">
+        <svg class="navIcon" viewBox="0 0 24 24"><path fill="#ffdde0" d="M8 5v14l11-7z"/></svg>
+        Demo
+      </div>
+    </div>
+
+    <div class="navBlock nav">
+      <div class="navTitle">Agent overview</div>
+      <a class="active" onclick="showPage('how', this)">
+        <svg class="navIcon" viewBox="0 0 24 24"><path fill="#cbd5e1" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14h-2v-2h2v2zm0-4h-2V6h2v6z"/></svg>
+        How it works
+      </a>
+      <a onclick="showPage('key', this)">
+        <svg class="navIcon" viewBox="0 0 24 24"><path fill="#cbd5e1" d="M12 2l3 7h7l-5.5 4 2 7-6.5-4.5L5.5 20l2-7L2 9h7z"/></svg>
+        Key features
+      </a>
+      <a onclick="showPage('scope', this)">
+        <svg class="navIcon" viewBox="0 0 24 24"><path fill="#cbd5e1" d="M4 6h16v2H4zm0 5h10v2H4zm0 5h16v2H4z"/></svg>
+        Scope
+      </a>
+
+      <div class="navTitle">AI agent</div>
+      <a onclick="openDashboardModal(this)">
+        <svg class="navIcon" viewBox="0 0 24 24"><path fill="#cbd5e1" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </a>
+
+      <button class="cta" onclick="toggleChat()">Ask the AI agent</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- HOW IT WORKS -->
+    <section id="page-how" class="page active">
+      <div class="card">
+        <div class="kicker">How it works in 30 seconds</div>
+        <div class="h1">Every Coupa ↔ ERP transaction monitored — <span style="color:var(--accent)">SLA, root cause, remediation</span> — with Run‑ready outputs.</div>
+        <div class="p">Interface Run Assurance is a production‑ready AI agent supervising Coupa integrations end‑to‑end. It correlates technical events and functional statuses across Coupa, middleware and SAP to detect incidents, enforce SLAs, trigger safe remediations and generate evidence‑based tickets for Run teams.</div>
+
+        <div class="pills">
+          <span class="pill">Invoice export · OK2PAY</span>
+          <span class="pill">Purchase orders · receipts</span>
+          <span class="pill">Supplier master data</span>
+          <span class="pill">Middleware replay · retries</span>
+          <span class="pill">ITSM tickets · evidence pack</span>
+        </div>
+
+        <div class="grid grid3" style="margin-top:16px">
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4 8-4zm0 10l6.9-3.45L20 12l-8 4-8-4 1.1-1.45L12 14z"/></svg>
+            <div class="h3">1) Observe</div>
+            <div class="p">Continuous capture of interface events (technical) and business objects (functional). Transactions are correlated by stable keys (doc IDs, message IDs, references).</div>
+          </div>
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14h-2v-2h2v2zm0-4h-2V6h2v6z"/></svg>
+            <div class="h3">2) Diagnose</div>
+            <div class="p">SLA timers, missing ACKs, mapping errors and timeouts are detected. The agent builds an operational diagnostic with probable cause and next best actions.</div>
+          </div>
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14l-6-6v12z"/></svg>
+            <div class="h3">3) Act & escalate</div>
+            <div class="p">When safe, the agent executes standard remediation (replay/retry/resync). Otherwise it generates an ITSM ticket with evidence pack and suggested remediation.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="kicker">Concretely, here is what it looks like</div>
+        <div class="h2">End‑to‑end incident narrative — missing acknowledgement beyond SLA</div>
+        <div class="p">On the left: the transaction trace (what happened). On the right: the operational outcome and run actions (what we do next). The agent correlates and decides.</div>
+
+        <div class="grid grid2" style="margin-top:14px">
+          <div class="tableCard">
+            <div class="tableHead">
+              <div>
+                <div class="kicker" style="margin:0">Trace events (SAP / Middleware / Coupa)</div>
+                <div class="fileName">TRC-IV-00991 · COUPA_INV_991002</div>
+              </div>
+              <span class="badge red">SLA breached</span>
+            </div>
+            <div class="tableBody">
+              <div class="tableRow tableCols"><div>timestamp</div><div>system</div><div>status</div></div>
+              <div class="tableRow"><div>08:10</div><div>COUPA</div><div><span class="badge green">OK</span></div></div>
+              <div class="tableRow"><div>08:12</div><div>MULESOFT</div><div><span class="badge green">OK</span></div></div>
+              <div class="tableRow"><div>08:35</div><div>MULESOFT</div><div><span class="badge red">ERROR</span></div></div>
+              <div class="smallNote">Evidence: ACK not received within 15 minutes SLA.</div>
+            </div>
+          </div>
+
+          <div class="tableCard">
+            <div class="tableHead">
+              <div>
+                <div class="kicker" style="margin:0">Run action plan</div>
+                <div class="fileName">INC-IRA-12084 · Evidence pack</div>
+              </div>
+              <span class="badge green">Auto-heal available</span>
+            </div>
+            <div class="tableBody">
+              <div class="tableRow"><div>probable cause</div><div>MW correlation</div><div>timeout</div></div>
+              <div class="tableRow"><div>suggested action</div><div>replay</div><div>safe</div></div>
+              <div class="tableRow"><div>ticket payload</div><div>last 6 logs</div><div>attached</div></div>
+              <div class="smallNote">Outcome: replay executed → Coupa acknowledgement received → incident closed.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="codeStrip">
+          <span style="color:var(--accent)">Concrete transformation example:</span> 
+          IF invoice export is <b>OK</b> but acknowledgement is missing beyond SLA → trigger <b>middleware replay</b> → re-check Coupa status → if still missing, create a <b>P1 ticket</b> with trace evidence.
+        </div>
+      </div>
+    </section>
+
+    <!-- KEY FEATURES -->
+    <section id="page-key" class="page">
+      <div class="card">
+        <div class="h2">Key features</div>
+        <div class="p">Deeply operational features designed for Run: traceability, SLA control, standard remediation and evidence‑based escalation.</div>
+      </div>
+
+      <div class="card">
+        <div class="grid grid2">
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16v6H4V4zm0 10h10v6H4v-6zm12 0h4v6h-4v-6z"/></svg>
+            <div class="h3">End‑to‑end traceability</div>
+            <div class="p">Reconstructs the full transaction path across Coupa, middleware and SAP. Correlates message IDs, business IDs and technical logs.</div>
+            <div class="pills" style="margin-top:10px">
+              <span class="pill">avg trace depth: 6 systems</span>
+              <span class="pill">100% business ID coverage</span>
+            </div>
+
+            <svg class="spark" viewBox="0 0 240 48" preserveAspectRatio="none">
+              <path d="M0,40 C30,20 60,30 90,18 C120,6 150,10 180,16 C210,22 230,10 240,8" stroke="rgba(214,178,108,.9)" stroke-width="3" fill="none"/>
+              <path d="M0,47 L0,40 C30,20 60,30 90,18 C120,6 150,10 180,16 C210,22 230,10 240,8 L240,47 Z" fill="rgba(214,178,108,.14)"/>
+            </svg>
+          </div>
+
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V6l-8-4-8 4v6c0 6 8 10 8 10z"/></svg>
+            <div class="h3">SLA enforcement & Run KPIs</div>
+            <div class="p">Continuous SLA monitoring at interface/object level (Invoice, PO, Supplier). Detects breaches and quantifies operational impact.</div>
+            <div class="pills" style="margin-top:10px">
+              <span class="pill">SLA compliance: 97%</span>
+              <span class="pill">MTTR: 2.1h (vs ~18h)</span>
+            </div>
+            <svg class="spark" viewBox="0 0 240 48" preserveAspectRatio="none">
+              <path d="M0,10 C30,12 60,14 90,16 C120,18 150,20 180,24 C210,28 230,30 240,32" stroke="rgba(34,197,94,.9)" stroke-width="3" fill="none"/>
+              <path d="M0,47 L0,10 C30,12 60,14 90,16 C120,18 150,20 180,24 C210,28 230,30 240,32 L240,47 Z" fill="rgba(34,197,94,.10)"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="grid grid2">
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 1.02-.3 1.97-.82 2.76l1.46 1.46A6.98 6.98 0 0019 13c0-3.87-3.13-7-7-7zm-5.64.64L4.9 8.1A6.98 6.98 0 005 13c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5 0-1.02.3-1.97.82-2.76z"/></svg>
+            <div class="h3">Automated standard remediation</div>
+            <div class="p">Executes safe actions (replay, retry, resync) for known scenarios. Prevents repetitive manual gestures and reduces incident duration.</div>
+            <div class="pills" style="margin-top:10px">
+              <span class="pill">auto-resolved share: ~85%</span>
+              <span class="pill">replay success rate: 93%</span>
+            </div>
+            <div class="codeStrip" style="margin-top:12px">
+              <b>Rule:</b> if ACK missing beyond SLA and no downstream mutation detected → <b>replay</b> middleware message → re-check Coupa status.
+            </div>
+          </div>
+
+          <div class="card-soft">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 4h16v14H7l-3 3V4zm3 4h10v2H7V8zm0 4h7v2H7v-2z"/></svg>
+            <div class="h3">Evidence‑based ticketing</div>
+            <div class="p">Generates Run‑ready tickets with trace evidence, impacted interfaces, root cause hypothesis and suggested actions — consistent ITSM packaging.</div>
+            <table class="ticketTable" style="margin-top:10px">
+              <thead><tr><th>Field</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Priority</td><td><span class="badge red">P1</span></td></tr>
+                <tr><td>Impacted flow</td><td>Invoice OK2PAY export</td></tr>
+                <tr><td>Evidence</td><td>last 6 logs + correlation keys</td></tr>
+                <tr><td>Suggested action</td><td>Replay + reconciliation</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h2">What is out of scope (current phase)</div>
+        <div class="p">To avoid ambiguity, the agent focuses on Run assurance and standard remediation. The following items are out of scope for the current phase:</div>
+        <div class="grid grid3" style="margin-top:12px">
+          <div class="card-soft"><span class="badge gray">Out of scope</span><div class="h3" style="margin-top:8px">Business process redesign</div><div class="p">Procurement policy redesign, approval governance changes, organization redesign.</div></div>
+          <div class="card-soft"><span class="badge gray">Out of scope</span><div class="h3" style="margin-top:8px">Bespoke ERP custom build</div><div class="p">Heavy custom ABAP developments and deep ERP refactoring (except targeted fixes).</div></div>
+          <div class="card-soft"><span class="badge gray">Out of scope</span><div class="h3" style="margin-top:8px">Tax engine logic</div><div class="p">Complex tax determination design and custom fiscal engines (agent consumes outcomes).</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCOPE -->
+    <section id="page-scope" class="page">
+      <div class="card">
+        <div class="h2">Scope</div>
+        <div class="p">Coverage across the most common Coupa ↔ ERP flows observed in enterprise deployments, aligned to LVMH Beauty integration priorities.</div>
+
+        <div class="grid grid3" style="margin-top:14px">
+          <div class="card-soft">
+            <div class="kicker">READY</div>
+            <div class="kpi" data-animate data-target="12" data-suffix="">0</div>
+            <div class="kpiSub">Flows monitored with standard remediation available</div>
+          </div>
+          <div class="card-soft">
+            <div class="kicker">IN PROGRESS</div>
+            <div class="kpi" data-animate data-target="9" data-suffix="">0</div>
+            <div class="kpiSub">Flows being industrialized (data contracts, edge cases)</div>
+          </div>
+          <div class="card-soft">
+            <div class="kicker">ROADMAP</div>
+            <div class="kpi" data-animate data-target="6" data-suffix="">0</div>
+            <div class="kpiSub">Planned extensions (payments / advanced cases)</div>
+          </div>
+        </div>
+
+        <div class="card-soft" style="margin-top:14px">
+          <div class="kicker">Agent coverage</div>
+          <div style="display:flex; align-items:center; gap:12px; margin-top:8px">
+            <div style="flex:1; height:10px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid var(--stroke); overflow:hidden">
+              <div style="width:59%; height:100%; background:linear-gradient(90deg, rgba(214,178,108,.95), rgba(214,178,108,.40));"></div>
+            </div>
+            <div class="p" style="margin:0"><b>59%</b> of standard Coupa integration scope covered</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h2">1) Reference data & master data</div>
+        <div class="grid grid3" style="margin-top:12px">
+          <div class="card-soft">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div class="h3">Addresses & legal entities</div>
+                <div class="p">Companies, sites, locations, org units.</div>
+                <div class="smallNote">~5 entities · 12 addresses</div>
+              </div>
+              <span class="badge green">READY</span>
+            </div>
+          </div>
+          <div class="card-soft">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div class="h3">Suppliers</div>
+                <div class="p">Supplier master, bank details, payment terms.</div>
+                <div class="smallNote">~1,200 suppliers</div>
+              </div>
+              <span class="badge amber">IN PROGRESS</span>
+            </div>
+          </div>
+          <div class="card-soft">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div class="h3">Chart of accounts (COA)</div>
+                <div class="p">Accounts, segments, analytic dimensions.</div>
+                <div class="smallNote">~600 accounts · 4 segments</div>
+              </div>
+              <span class="badge amber">IN PROGRESS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h2">2) Procurement & approvals</div>
+        <div class="grid grid3" style="margin-top:12px">
+          <div class="card-soft">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div class="h3">Approval workflows</div>
+                <div class="p">Routing rules for purchases, invoices and POs.</div>
+                <div class="smallNote">~50 chains</div>
+              </div>
+              <span class="badge green">READY</span>
+            </div>
+          </div>
+          <div class="card-soft">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div class="h3">Submission rules</div>
+                <div class="p">Data quality guardrails (blocking + warnings).</div>
+                <div class="smallNote">~12 rules</div>
+              </div>
+              <span class="badge green">READY</span>
+            </div>
+          </div>
+          <div class="card-soft">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div class="h3">2‑way / 3‑way matching</div>
+                <div class="p">Tolerance policies & receipt behavior.</div>
+                <div class="smallNote">Planned extensions</div>
+              </div>
+              <span class="badge gray">PLANNED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="page-dash" class="page">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px">
+          <div>
+            <div class="h2" style="margin:0">Dashboard</div>
+            <div class="p">Narrative views for both Executive steering and Run operations.</div>
+          </div>
+          <div class="btnRow">
+            <button id="btnExec" class="btn btnPrimary" onclick="switchDash('exec')">Executive</button>
+            <button id="btnRun" class="btn" onclick="switchDash('run')">Run</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXEC DASH -->
+      <div id="dash-exec">
+        <div class="grid grid2">
+          <div class="card">
+            <div class="kicker">TIME SAVED</div>
+            <div class="kpi" data-animate data-target="25" data-suffix="d">0</div>
+            <div class="kpiSub">vs equivalent manual investigation & coordination</div>
+            <svg class="spark" viewBox="0 0 240 48" preserveAspectRatio="none">
+              <path d="M0,35 C35,36 55,22 80,22 C110,22 125,10 150,12 C175,14 200,8 240,6" stroke="rgba(214,178,108,.9)" stroke-width="3" fill="none"/>
+              <path d="M0,47 L0,35 C35,36 55,22 80,22 C110,22 125,10 150,12 C175,14 200,8 240,6 L240,47 Z" fill="rgba(214,178,108,.14)"/>
+            </svg>
+          </div>
+          <div class="card">
+            <div class="kicker">PROJECTED SAVINGS</div>
+            <div class="kpi" data-animate data-target="29520" data-prefix="€" data-format="int">0</div>
+            <div class="kpiSub">based on blended day-rate baseline — excluding quality gain</div>
+            <svg class="spark" viewBox="0 0 240 48" preserveAspectRatio="none">
+              <path d="M0,40 C40,35 70,30 100,26 C130,22 165,18 200,14 C220,12 232,10 240,9" stroke="rgba(34,197,94,.9)" stroke-width="3" fill="none"/>
+              <path d="M0,47 L0,40 C40,35 70,30 100,26 C130,22 165,18 200,14 C220,12 232,10 240,9 L240,47 Z" fill="rgba(34,197,94,.10)"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="grid grid4" style="margin-top:16px">
+          <div class="card-soft"><div class="kicker">Transactions / day</div><div class="kpi" data-animate data-target="8600" data-format="int">0</div><div class="kpiSub">across Coupa ↔ ERP flows</div></div>
+          <div class="card-soft"><div class="kicker">Automation rate</div><div class="kpi" data-animate data-target="88" data-suffix="%">0</div><div class="kpiSub">auto-heal + guided actions</div></div>
+          <div class="card-soft"><div class="kicker">SLA compliance</div><div class="kpi" data-animate data-target="97" data-suffix="%">0</div><div class="kpiSub">last 30 days</div></div>
+          <div class="card-soft"><div class="kicker">Incident trend</div><div class="kpi" style="font-size:28px">↓ 34%</div><div class="kpiSub">vs previous 30 days</div></div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="h3">Executive narrative</div>
+          <div class="p">Integration Run is under control and improving. The agent reduces manual investigation, accelerates resolution and enforces consistent operational discipline (SLA + evidence packaging). This unlocks stable operations and frees senior capacity for higher‑value work.</div>
+        </div>
+      </div>
+
+      <!-- RUN DASH -->
+      <div id="dash-run" style="display:none">
+        <div class="grid grid3">
+          <div class="card">
+            <div class="kicker">OPEN INCIDENTS</div>
+            <div class="kpi" data-animate data-target="17" data-format="int">0</div>
+            <div class="kpiSub"><span class="badge red">P1: 3</span> · <span class="badge amber">P2: 9</span> · <span class="badge gray">P3: 5</span></div>
+          </div>
+          <div class="card">
+            <div class="kicker">SLA BREACHES (24h)</div>
+            <div class="kpi" data-animate data-target="9" data-format="int">0</div>
+            <div class="kpiSub">invoice export + supplier sync dominate</div>
+          </div>
+          <div class="card">
+            <div class="kicker">AUTO‑RESOLVED (24h)</div>
+            <div class="kpi" data-animate data-target="41" data-format="int">0</div>
+            <div class="kpiSub">replay success rate: <b>93%</b></div>
+          </div>
+        </div>
+
+        <div class="grid grid2" style="margin-top:16px">
+          <div class="card">
+            <div class="h3">Focus today</div>
+            <div class="p">Actionable priority list derived from aging, SLA and criticality.</div>
+            <div class="btnRow">
+              <span class="badge red">3 P1</span>
+              <span class="badge amber">2 SLA-breached invoices</span>
+              <span class="badge gray">1 supplier sync blocked</span>
+            </div>
+            <div class="smallNote">Recommendation: start with P1 older than 12h, then SLA-breached OK2PAY exports.</div>
+          </div>
+          <div class="card">
+            <div class="h3">Operations queue</div>
+            <table class="ticketTable">
+              <thead><tr><th>Ticket</th><th>Priority</th><th>Age</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>INC-IRA-12084</td><td><span class="badge red">P1</span></td><td>14h</td><td>Awaiting action</td></tr>
+                <tr><td>INC-IRA-12091</td><td><span class="badge red">P1</span></td><td>9h</td><td>Auto-heal attempted</td></tr>
+                <tr><td>INC-IRA-12102</td><td><span class="badge amber">P2</span></td><td>6h</td><td>In progress</td></tr>
+                <tr><td>INC-IRA-12108</td><td><span class="badge amber">P2</span></td><td>2h</td><td>Queued for replay</td></tr>
+              </tbody>
+            </table>
+            <div class="btnRow">
+              <button class="btn" onclick="simulateQueue()">Simulate ticket closure</button>
+              <button class="btn" onclick="simulateReplay()">Simulate replay</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Dashboard selection modal -->
+<div id="dashModal" class="modal">
+  <div class="modalBox">
+    <div class="modalTop">
+      <div style="font-weight:950">Select dashboard view</div>
+      <div class="x" onclick="closeDashboardModal()">✕</div>
+    </div>
+    <div class="p" style="margin-top:8px">Choose the narrative most relevant to your audience. You can switch anytime.</div>
+    <div class="btnRow" style="margin-top:14px">
+      <button class="btn btnPrimary" onclick="selectDashboard('exec')">Executive (steering)</button>
+      <button class="btn" onclick="selectDashboard('run')">Run (operations)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chatbot -->
+<div id="chat" class="chat">
+  <div class="chatHeader">
+    AI agent
+    <span class="x" onclick="toggleChat()">✕</span>
+  </div>
+  <div id="chatBody" class="chatBody">
+    <div class="smallNote">Ask any question — this showcase demo returns a fixed response.</div>
+  </div>
+  <div class="chatFooter">
+    <input id="chatInput" placeholder="Type a question…" />
+    <button class="btn btnPrimary" onclick="sendChat()">Send</button>
+  </div>
+</div>
+
+<script>
+// --- Navigation (safe, no global event reliance)
+function showPage(which, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+which).classList.add('active');
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // animate visible KPIs
+  animateCounters(document.getElementById('page-'+which));
+}
+
+// --- Dashboard modal + modes
+let dashMode = 'exec';
+let dashboardNavEl = null;
+function openDashboardModal(el){
+  dashboardNavEl = el;
+  document.getElementById('dashModal').style.display='flex';
+}
+function closeDashboardModal(){
+  document.getElementById('dashModal').style.display='none';
+}
+function selectDashboard(mode){
+  dashMode = mode;
+  closeDashboardModal();
+  showPage('dash', dashboardNavEl);
+  switchDash(mode);
+}
+function switchDash(mode){
+  dashMode = mode;
+  const exec = document.getElementById('dash-exec');
+  const run  = document.getElementById('dash-run');
+  const bE = document.getElementById('btnExec');
+  const bR = document.getElementById('btnRun');
+  if(mode==='exec'){
+    exec.style.display='block'; run.style.display='none';
+    bE.classList.add('btnPrimary'); bE.classList.remove('btn');
+    bR.classList.add('btn'); bR.classList.remove('btnPrimary');
+  } else {
+    exec.style.display='none'; run.style.display='block';
+    bR.classList.add('btnPrimary'); bR.classList.remove('btn');
+    bE.classList.add('btn'); bE.classList.remove('btnPrimary');
+  }
+  animateCounters(document.getElementById('page-dash'));
+}
+
+// --- Counters (robust; formats; animates once per visibility)
+function formatNumber(n){
+  return n.toLocaleString('en-US');
+}
+function animateCounters(scope){
+  if(!scope) return;
+  scope.querySelectorAll('[data-animate]').forEach(el=>{
+    const target = parseFloat(el.getAttribute('data-target'));
+    const suffix = el.getAttribute('data-suffix') || '';
+    const prefix = el.getAttribute('data-prefix') || '';
+    const fmt = el.getAttribute('data-format') || 'auto';
+    if(el._animated) return;
+    el._animated = true;
+    const start = performance.now();
+    const dur = 700;
+    function tick(t){
+      const p = Math.min(1, (t-start)/dur);
+      const v = target * (0.15 + 0.85*p*p); // ease
+      let txt;
+      if(fmt==='int' || Number.isInteger(target)) txt = formatNumber(Math.round(v));
+      else txt = (Math.round(v*10)/10).toFixed(1);
+      el.textContent = prefix + txt + suffix;
+      if(p<1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// --- Chatbot
+const fixedReply = "This is a showcase demo — the live AI assistant is disabled. Reach out to BearingPoint to see a full Q&A session.";
+function toggleChat(){
+  const c = document.getElementById('chat');
+  c.style.display = (c.style.display==='flex') ? 'none' : 'flex';
+  if(c.style.display==='flex') document.getElementById('chatInput').focus();
+}
+function sendChat(){
+  const input = document.getElementById('chatInput');
+  const q = (input.value || '').trim();
+  if(!q) return;
+  const body = document.getElementById('chatBody');
+  const u = document.createElement('div');
+  u.className = 'bubble user';
+  u.textContent = q;
+  body.appendChild(u);
+  const b = document.createElement('div');
+  b.className = 'bubble bot';
+  b.textContent = fixedReply;
+  body.appendChild(b);
+  input.value='';
+  body.scrollTop = body.scrollHeight;
+}
+
+// --- Run dashboard small simulations (purely visual)
+function simulateQueue(){
+  const rows = document.querySelectorAll('#dash-run tbody tr');
+  if(rows.length>0){
+    rows[0].style.opacity = '.35';
+    rows[0].querySelector('td:last-child').textContent = 'Closed';
+  }
+}
+function simulateReplay(){
+  const rows = document.querySelectorAll('#dash-run tbody tr');
+  if(rows.length>1){
+    rows[1].querySelector('td:last-child').textContent = 'Replayed · pending ACK';
+  }
+}
+
+// Initial animations for default page
+animateCounters(document.getElementById('page-how'));
+
+/* ======================
+   DEMO VIDEO OVERLAY
+====================== */
+function openDemo(){
+  const overlay = document.getElementById('demoOverlay');
+  const frame = document.getElementById('demoFrame');
+
+  frame.src = 'demo-video.html';
+  overlay.style.display = 'flex';
+}
+
+function closeDemo(){
+  const overlay = document.getElementById('demoOverlay');
+  const frame = document.getElementById('demoFrame');
+
+  frame.src = '';
+  overlay.style.display = 'none';
+}
+
+</script>
+
+<!-- =======================
+ Demo Video Overlay
+======================= -->
+<div id="demoOverlay" style="
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter: blur(10px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+">
+  <div style="
+    position:relative;
+    width:90vw;
+    max-width:1400px;
+    aspect-ratio:16/9;
+    background:#000;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+    border:1px solid rgba(255,255,255,.12);
+  ">
+    <!-- Close button -->
+    <button onclick="closeDemo()" style="
+      position:absolute;
+      top:14px;
+      right:14px;
+      width:36px;
+      height:36px;
+      border-radius:50%;
+      border:0;
+      cursor:pointer;
+      font-size:18px;
+      font-weight:900;
+      color:#000;
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
+      z-index:2;
+    ">✕</button>
+
+    <!-- Demo video -->
+    <iframe
+      id="demoFrame"
+      src=""
+      style="width:100%;height:100%;border:0;"
+      allow="autoplay; fullscreen"
+    ></iframe>
+  </div>
+</div>
+
+</body>
+</html>
